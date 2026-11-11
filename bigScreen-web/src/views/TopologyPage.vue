@@ -1893,6 +1893,7 @@ export default {
     applyTransform() {
       const world = document.getElementById('world')
       if (!world) return
+      // #world 以画布中心为定位基准：先平移 -50% 居中，再叠加用户平移与缩放
       world.style.transform = `translate(calc(-50% + ${this.viewPanX}px), calc(-50% + ${this.viewPanY}px)) scale(${this.viewScale})`
     },
     initZoomPan() {
@@ -1927,6 +1928,7 @@ export default {
       let newScale = oldScale * factor
       newScale = Math.max(this.minScale, Math.min(this.maxScale, newScale))
       const f = newScale / oldScale
+      // 以鼠标位置为锚点缩放，同步补偿平移量，避免画面围绕画布中心跳动
       this.viewPanX += (mx - container.clientWidth / 2 - this.viewPanX) * (1 - f)
       this.viewPanY += (my - container.clientHeight / 2 - this.viewPanY) * (1 - f)
       this.viewScale = newScale
@@ -1942,6 +1944,7 @@ export default {
       const container = document.getElementById('canvas-container')
       if (container) container.style.cursor = 'grabbing'
     },
+    // 屏幕坐标转世界坐标；右键菜单与连线创建使用同一换算公式，修改时需三处同步
     updateMouseCoord(e) {
       const container = document.getElementById('canvas-container')
       if (!container) return
@@ -1988,6 +1991,7 @@ export default {
     resizeLayout() {
       const container = document.getElementById('canvas-container')
       if (!container) return
+      // 用户手动缩放/平移后不再自动适配，避免窗口尺寸变化覆盖当前视角
       if (!this._userInteracted) {
         this.viewScale = Math.min(container.clientWidth / this.worldWidth, container.clientHeight / this.worldHeight)
         this.viewPanX = 0

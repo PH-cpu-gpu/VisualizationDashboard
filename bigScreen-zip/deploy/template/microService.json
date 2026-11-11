@@ -1,0 +1,1886 @@
+{
+  "monitorType": "microService",
+  "monitorName": "${application_name}-${primary_ip_address}",
+  "displayType": "microService",
+  "displayTypeName": "微服务",
+  "agent": "none",
+  "netMask": "0.0.0.0",
+  "isProxy": "false",
+  "poolGroup": "0",
+  "agentHost": "",
+  "host": "${primary_ip_address}",
+  "port": "${applicationPort}",
+  "zkConnectString": "${svc_zookeeper_connect_string}",
+  "zkUser": "${svc_zookeeper_user}",
+  "zkPassword": "${svc_zookeeper_password}",
+  "application": "${appType}",
+  "group": "${group}",
+  "projectName": "",
+  "functionIds": "",
+  "secret": "",
+  "version": "v",
+  "pollingTime": "30",
+  "active": "true",
+  "monitorBlock": {
+    "value": [
+      {
+        "name": "cpu",
+        "value": "true"
+      },
+      {
+        "name": "memory",
+        "value": "true"
+      },
+      {
+        "name": "registry",
+        "value": "true"
+      },
+      {
+        "name": "server",
+        "value": "true"
+      },
+      {
+        "name": "spring",
+        "value": "true"
+      },
+      {
+        "name": "threadpool",
+        "value": "true"
+      },
+      {
+        "name": "jresThreadump",
+        "value": "false"
+      },
+      {
+        "name": "consumers",
+        "value": "true"
+      },
+      {
+        "name": "providers",
+        "value": "true"
+      },
+      {
+        "name": "providersApi",
+        "value": "true"
+      },
+      {
+        "name": "mqConsumers",
+        "value": "false"
+      },
+      {
+        "name": "mqPublishers",
+        "value": "false"
+      },
+      {
+        "name": "mqPublishersOrConsumers",
+        "value": "false"
+      },
+      {
+        "name": "amqpBinderConnection",
+        "value": "false"
+      },
+      {
+        "name": "amqpInstanceConnection",
+        "value": "false"
+      },
+      {
+        "name": "gc",
+        "value": "false"
+      },
+      {
+        "name": "apiSummary",
+        "value": "false"
+      },
+      {
+        "name": "serviceProviderWholeThread",
+        "value": "true"
+      },
+      {
+        "name": "serviceProviderThread",
+        "value": "false"
+      },
+      {
+        "name": "clientChannel",
+        "value": "false"
+      },
+      {
+        "name": "warningGcInfo",
+        "value": "false"
+      },
+      {
+        "name": "warningYoungGcInfo",
+        "value": "false"
+      },
+      {
+        "name": "webServer",
+        "value": "false"
+      },
+      {
+        "name": "localCacheTableStats",
+        "value": "false"
+      },
+      {
+        "name": "localCacheError",
+        "value": "false"
+      },
+      {
+        "name": "localCacheThread",
+        "value": "false"
+      },
+      {
+        "name": "localCacheAsyncProcessThreadPoolExecuteInfo",
+        "value": "false"
+      },
+      {
+        "name": "localCacheLargeIndexInfo",
+        "value": "false"
+      },
+      {
+        "name": "mcJavaClientPublishFlow",
+        "value": "false"
+      },
+      {
+        "name": "mcJavaClientPublishers",
+        "value": "false"
+      },
+      {
+        "name": "mcJavaClientSubscribeFlow",
+        "value": "false"
+      },
+      {
+        "name": "mcJavaClientSubscribers",
+        "value": "false"
+      },
+      {
+        "name": "mcJavaClientSubscriberConnection",
+        "value": "false"
+      },
+      {
+        "name": "dynamicDataSourceMonitor",
+        "value": "false"
+      },
+      {
+        "name": "t2T3SdkHealth",
+        "value": "false"
+      },
+      {
+        "name": "t2sdkMonitor",
+        "value": "false"
+      },
+      {
+        "name": "t3sdkMonitor",
+        "value": "false"
+      }
+    ],
+    "type": "multiSelect"
+  },
+  "persistentBlocks": {
+    "type": "adaptingSelect",
+    "value": [
+      {
+        "name": "all",
+        "value": "10"
+      }
+    ]
+  },
+  "warningConditions": [],
+  "errorConditions": {
+    "warnTimesForMerge": "2",
+    "warnControler": "0:1",
+    "newWarn": "{\"newWarnTimeInterval\":604800,\"score\":10}",
+    "upgradeWarn": "{\"upgradeWarnTimeInterval\":3600,\"upgradeWarnCount\":10,\"score\":10}",
+    "actionIsolate": "true",
+    "timeRanges": [],
+    "action": [],
+    "executeTask": {
+      "expression": ""
+    }
+  },
+  "planTask": [],
+  "executeTask": {
+    "expression": "",
+    "name": "内置时间计划"
+  },
+  "timeRanges": [],
+  "msgField": [
+    {
+      "name": "cpu",
+      "describe": "CPU使用情况",
+      "field": [
+        {
+          "name": "load",
+          "type": "float",
+          "describe": "CPU使用率(%)"
+        },
+        {
+          "name": "count",
+          "type": "string",
+          "describe": "CPU内核数"
+        }
+      ]
+    },
+    {
+      "name": "memory",
+      "describe": "JVM内存空间",
+      "field": [
+        {
+          "name": "max",
+          "type": "long",
+          "describe": "最大内存量(MB)"
+        },
+        {
+          "name": "total",
+          "type": "long",
+          "describe": "内存总量(MB)"
+        },
+        {
+          "name": "used",
+          "type": "long",
+          "describe": "已使用内存量(MB)"
+        },
+        {
+          "name": "free",
+          "type": "long",
+          "describe": "空闲内存量(MB)"
+        }
+      ]
+    },
+    {
+      "name": "gc",
+      "describe": "GC信息",
+      "field": [
+        {
+          "name": "count",
+          "type": "long",
+          "describe": "GC次数"
+        },
+        {
+          "name": "gc_time",
+          "type": "long",
+          "describe": "GC耗时(ms)"
+        },
+        {
+          "name": "jvm_old_gc_info_full_gc_collector",
+          "type": "string",
+          "describe": "老年代回收器名称"
+        },
+        {
+          "name": "jvm_old_gc_info_full_gc_total_time",
+          "type": "string",
+          "describe": "当前应用full gc总耗时"
+        },
+        {
+          "name": "jvm_old_gc_info_full_gc_total_counts",
+          "type": "string",
+          "describe": "当前应用full gc总次数"
+        },
+        {
+          "name": "jvm_old_gc_info_full_gc_increment_counts_interval",
+          "type": "string",
+          "describe": "当前应用full gc总次数轮询增量"
+        },
+        {
+          "name": "jvm_old_gc_info_old_gen_name",
+          "type": "string",
+          "describe": "老年代空间名称"
+        },
+        {
+          "name": "jvm_old_gc_info_full_gc_in_5_min",
+          "type": "string",
+          "describe": "5分钟内full gc信息"
+        },
+        {
+          "name": "jvm_old_gc_info_full_gc_in_1_hour",
+          "type": "string",
+          "describe": "1小时内full gc信息"
+        },
+        {
+          "name": "jvm_old_gc_info_full_gc_in_1_day",
+          "type": "string",
+          "describe": "1天内full gc信息"
+        },
+        {
+          "name": "jvm_old_gc_info_1_hour_total_counts",
+          "type": "string",
+          "describe": "1小时内进行full gc的总次数"
+        },
+        {
+          "name": "jvm_old_gc_info_1_hour_max_time",
+          "type": "string",
+          "describe": "1小时内单次full gc的最长耗时"
+        },
+        {
+          "name": "jvm_old_gc_info_1_hour_max_time_occur_time",
+          "type": "string",
+          "describe": "1小时内耗时最长的full gc发生时间"
+        },
+        {
+          "name": "jvm_old_gc_info_1_hour_avg_time",
+          "type": "string",
+          "describe": "1小时内full gc的平均耗时"
+        },
+        {
+          "name": "jvm_old_gc_info_total_counts",
+          "type": "string",
+          "describe": "1天内进行full gc的总次数"
+        },
+        {
+          "name": "jvm_old_gc_info_max_time",
+          "type": "string",
+          "describe": "1天内单次full gc的最长耗时"
+        },
+        {
+          "name": "jvm_old_gc_info_max_time_occur_time",
+          "type": "string",
+          "describe": "1天内耗时最长的full gc发生时间"
+        },
+        {
+          "name": "jvm_old_gc_info_avg_time",
+          "type": "string",
+          "describe": "1天内full gc的平均耗时"
+        },
+        {
+          "name": "jvm_old_gc_info_warning_gc_info",
+          "type": "string",
+          "describe": "耗时超过设定值的full gc详细信息列表"
+        },
+        {
+          "name": "jvm_young_gc_info_young_gc_collector",
+          "type": "string",
+          "describe": "年轻代回收器名称"
+        },
+        {
+          "name": "jvm_young_gc_info_young_gc_total_time",
+          "type": "string",
+          "describe": "当前应用young gc总耗时"
+        },
+        {
+          "name": "jvm_young_gc_info_young_gc_total_counts",
+          "type": "string",
+          "describe": "当前应用young gc总次数"
+        },
+        {
+          "name": "jvm_young_gc_info_young_gc_increment_counts_interval",
+          "type": "string",
+          "describe": "当前应用young gc总次数轮询增量"
+        },
+        {
+          "name": "jvm_young_gc_info_young_gen_name",
+          "type": "string",
+          "describe": "年轻代空间名称"
+        },
+        {
+          "name": "jvm_young_gc_info_young_gc_in_5_min",
+          "type": "string",
+          "describe": "5分钟内young gc信息"
+        },
+        {
+          "name": "jvm_young_gc_info_young_gc_in_1_hour",
+          "type": "string",
+          "describe": "1小时内young gc信息"
+        },
+        {
+          "name": "jvm_young_gc_info_young_gc_in_1_day",
+          "type": "string",
+          "describe": "1天内young gc信息"
+        },
+        {
+          "name": "jvm_young_gc_info_1_hour_total_counts",
+          "type": "string",
+          "describe": "1小时内进行young gc的总次数"
+        },
+        {
+          "name": "jvm_young_gc_info_1_hour_max_time",
+          "type": "string",
+          "describe": "1小时内单次young gc的最长耗时"
+        },
+        {
+          "name": "jvm_young_gc_info_1_hour_max_time_occur_time",
+          "type": "string",
+          "describe": "1小时内耗时最长的young gc发生时间"
+        },
+        {
+          "name": "jvm_young_gc_info_1_hour_avg_time",
+          "type": "string",
+          "describe": "1小时内young gc的平均耗时"
+        },
+        {
+          "name": "jvm_young_gc_info_total_counts",
+          "type": "string",
+          "describe": "1天内进行young gc的总次数"
+        },
+        {
+          "name": "jvm_young_gc_info_max_time",
+          "type": "string",
+          "describe": "1天内单次young gc的最长耗时"
+        },
+        {
+          "name": "jvm_young_gc_info_max_time_occur_time",
+          "type": "string",
+          "describe": "1天内耗时最长的young gc发生时间"
+        },
+        {
+          "name": "jvm_young_gc_info_avg_time",
+          "type": "string",
+          "describe": "1天内young gc的平均耗时"
+        },
+        {
+          "name": "jvm_young_gc_info_warning_young_gc_info",
+          "type": "string",
+          "describe": "耗时超过设定值的young gc详细信息列表"
+        },
+        {
+          "name": "jvm_old_gc_info_after_last_full_gc_eden_max_size",
+          "type": "string",
+          "describe": "上一次full gc后 eden区最大内存"
+        },
+        {
+          "name": "jvm_old_gc_info_after_last_full_gc_survivor_max_size",
+          "type": "string",
+          "describe": "上一次full gc后 survivor区最大内存"
+        },
+        {
+          "name": "jvm_old_gc_info_after_last_full_gc_old_gen_max_size",
+          "type": "string",
+          "describe": "上一次full gc后 老年代最大内存"
+        },
+        {
+          "name": "jvm_old_gc_info_after_last_full_gc_eden_used_size",
+          "type": "string",
+          "describe": "上一次full gc后 eden区使用内存"
+        },
+        {
+          "name": "jvm_old_gc_info_after_last_full_gc_survivor_used_size",
+          "type": "string",
+          "describe": "上一次full gc后 survivor区使用内存"
+        },
+        {
+          "name": "jvm_old_gc_info_after_last_full_gc_old_gen_used_size",
+          "type": "string",
+          "describe": "上一次full gc后 老年代使用内存"
+        }
+      ]
+    },
+    {
+      "name": "registry",
+      "describe": "服务注册指标",
+      "display": "table",
+      "field": [
+        {
+          "name": "level",
+          "type": "string",
+          "describe": "服务注册状态"
+        },
+        {
+          "name": "address",
+          "type": "string",
+          "describe": "服务注册地址"
+        }
+      ]
+    },
+    {
+      "name": "server",
+      "describe": "服务连接指标",
+      "display": "table",
+      "field": [
+        {
+          "name": "level",
+          "type": "string",
+          "describe": "服务连接状态"
+        },
+        {
+          "name": "port",
+          "type": "string",
+          "describe": "服务端口"
+        },
+        {
+          "name": "clients",
+          "type": "integer",
+          "describe": "服务客户端数量"
+        },
+        {
+          "name": "accept",
+          "type": "integer",
+          "describe": "连接上限"
+        },
+        {
+          "name": "count",
+          "type": "string",
+          "describe": "服务端正常的客户端连接数量"
+        }
+      ]
+    },
+    {
+      "name": "spring",
+      "describe": "Spring环境指标",
+      "display": "table",
+      "field": [
+        {
+          "name": "level",
+          "type": "string",
+          "describe": "Spring环境状态"
+        }
+      ]
+    },
+    {
+      "name": "threadpool",
+      "describe": "处理线程池指标",
+      "display": "lineChart",
+      "field": [
+        {
+          "name": "level",
+          "type": "string",
+          "describe": "处理线程池状态"
+        },
+        {
+          "name": "max",
+          "type": "integer",
+          "describe": "处理线程总数"
+        },
+        {
+          "name": "core",
+          "type": "integer",
+          "describe": "核心线程数"
+        },
+        {
+          "name": "current",
+          "type": "integer",
+          "describe": "当前线程数"
+        },
+        {
+          "name": "largest",
+          "type": "integer",
+          "describe": "曾经到达过的最大线程数"
+        },
+        {
+          "name": "active",
+          "type": "integer",
+          "describe": "主动执行任务的线程数"
+        },
+        {
+          "name": "task",
+          "type": "integer",
+          "describe": "结束执行的任务数"
+        },
+        {
+          "name": "queueSize",
+          "type": "long",
+          "describe": "线程队列大小"
+        },
+        {
+          "name": "queueCapacity",
+          "type": "string",
+          "describe": "剩余队列容量"
+        }
+      ]
+    },
+    {
+      "name": "jresThreadump",
+      "describe": "线程Dump信息",
+      "display": "threadId",
+      "field": [
+        {
+          "name": "threadName",
+          "type": "string",
+          "describe": "线程名称"
+        },
+        {
+          "name": "threadId",
+          "type": "string",
+          "describe": "线程ID"
+        },
+        {
+          "name": "threadState",
+          "type": "string",
+          "describe": "线程状态"
+        }
+      ]
+    },
+    {
+      "name": "consumers",
+      "tags": "name",
+      "describe": "消费者信息",
+      "display": "lineChart",
+      "field": [
+        {
+          "name": "name",
+          "type": "string",
+          "describe": "名称"
+        },
+        {
+          "name": "success",
+          "type": "integer",
+          "describe": "服务调用成功次数"
+        },
+        {
+          "name": "failure",
+          "type": "integer",
+          "describe": "服务调用失败次数"
+        },
+        {
+          "name": "totalTime",
+          "type": "float",
+          "describe": "服务调用耗时"
+        },
+        {
+          "name": "intervalMaxTime",
+          "type": "float",
+          "describe": "调用成功最长时间(ms)"
+        },
+        {
+          "name": "intervalMinTime",
+          "type": "float",
+          "describe": "调用成功最短时间(ms)"
+        },
+        {
+          "name": "intervalAvglTime",
+          "type": "float",
+          "describe": "调用成功平均时间(ms)"
+        },
+        {
+          "name": "failureMap",
+          "type": "string",
+          "describe": "服务调用异常统计数据"
+        },
+        {
+          "name": "totalSuccess",
+          "type": "integer",
+          "describe": "总成功次数"
+        },
+        {
+          "name": "totalFailure",
+          "type": "integer",
+          "describe": "总失败次数"
+        },
+        {
+          "name": "bizFailure",
+          "type": "string",
+          "describe": "从应用启动截止当前，该功能号业务错误失败次数"
+        },
+        {
+          "name": "sysFailure",
+          "type": "string",
+          "describe": "从应用启动截止当前，该功能号系统错误失败次数"
+        }
+      ]
+    },
+    {
+      "name": "providers",
+      "tags": "name",
+      "describe": "生产者信息",
+      "display": "lineChart",
+      "field": [
+        {
+          "name": "name",
+          "type": "string",
+          "describe": "名称"
+        },
+        {
+          "name": "success",
+          "type": "integer",
+          "describe": "服务调用成功次数"
+        },
+        {
+          "name": "failure",
+          "type": "integer",
+          "describe": "服务调用失败次数"
+        },
+        {
+          "name": "total",
+          "type": "integer",
+          "describe": "服务调用总次数"
+        },
+        {
+          "name": "totalTime",
+          "type": "float",
+          "describe": "服务调用耗时"
+        },
+        {
+          "name": "intervalMaxTime",
+          "type": "float",
+          "describe": "调用成功最长时间(ms)"
+        },
+        {
+          "name": "intervalMinTime",
+          "type": "float",
+          "describe": "调用成功最短时间(ms)"
+        },
+        {
+          "name": "intervalAvglTime",
+          "type": "float",
+          "describe": "调用成功平均时间(ms)"
+        },
+        {
+          "name": "failureMap",
+          "type": "string",
+          "describe": "服务调用异常统计数据"
+        },
+        {
+          "name": "bizFailure",
+          "type": "string",
+          "describe": "从应用启动截止当前，该功能号业务错误失败次数"
+        },
+        {
+          "name": "sysFailure",
+          "type": "string",
+          "describe": "从应用启动截止当前，该功能号系统错误失败次数"
+        },
+        {
+          "name": "QPS",
+          "type": "string",
+          "describe": "服务每秒被请求次数"
+        }
+      ]
+    },
+    {
+      "name": "apiSummary",
+      "tags": "minSuccRateAPIName",
+      "describe": "汇总API执行情况",
+      "display": "table",
+      "field": [
+        {
+          "name": "minSuccRateAPIName",
+          "type": "string",
+          "describe": "本轮询周期最低成功率API名称"
+        },
+        {
+          "name": "minSuccRate",
+          "type": "float",
+          "describe": "本轮询周期最低成功率(%)"
+        },
+        {
+          "name": "todayAllAPIs",
+          "type": "long",
+          "describe": "当日API执行总数"
+        },
+        {
+          "name": "todayAllAPISuccs",
+          "type": "long",
+          "describe": "当日API执行成功总数"
+        }
+      ]
+    },
+    {
+      "name": "providersApi",
+      "tags": "name",
+      "describe": "API执行情况",
+      "display": "table",
+      "field": [
+        {
+          "name": "name",
+          "type": "string",
+          "describe": "功能号"
+        },
+        {
+          "name": "totalSuccess",
+          "type": "integer",
+          "describe": "总成功次数"
+        },
+        {
+          "name": "totalFailure",
+          "type": "integer",
+          "describe": "总失败次数"
+        },
+        {
+          "name": "totalTime",
+          "type": "float",
+          "describe": "总调用耗时（ms）"
+        },
+        {
+          "name": "maxTime",
+          "type": "float",
+          "describe": "最大调用耗时（ms）"
+        },
+        {
+          "name": "minTime",
+          "type": "float",
+          "describe": "最小调用耗时（ms）"
+        },
+        {
+          "name": "queTime",
+          "type": "float",
+          "describe": "服务内部周期调用计算总耗时(ms)"
+        },
+        {
+          "name": "success",
+          "type": "integer",
+          "describe": "成功次数（轮询周期）"
+        },
+        {
+          "name": "failure",
+          "type": "integer",
+          "describe": "失败次数（轮询周期）"
+        },
+        {
+          "name": "total",
+          "type": "integer",
+          "describe": "总次数（轮询周期）"
+        },
+        {
+          "name": "tps",
+          "type": "float",
+          "describe": "TPS（轮询周期）"
+        },
+        {
+          "name": "succRate",
+          "type": "float",
+          "describe": "成功率%（轮询周期）"
+        },
+        {
+          "name": "failRate",
+          "type": "float",
+          "describe": "失败率%（轮询周期）"
+        },
+        {
+          "name": "intervalMaxTime",
+          "type": "float",
+          "describe": "服务内部周期调用成功最长时间(ms)"
+        },
+        {
+          "name": "intervalMinTime",
+          "type": "float",
+          "describe": "服务内部周期调用成功最短时间(ms)"
+        },
+        {
+          "name": "intervalTotalTime",
+          "type": "float",
+          "describe": "服务内部周期调用总耗时(ms)"
+        },
+        {
+          "name": "intervalAvglTime",
+          "type": "float",
+          "describe": "平均调用耗时(ms)"
+        },
+        {
+          "name": "content",
+          "type": "string",
+          "describe": "执行情况"
+        },
+        {
+          "name": "functionDesc",
+          "type": "string",
+          "describe": "API描述"
+        },
+        {
+          "name": "BIZ_EXCEPTION",
+          "type": "string",
+          "describe": "未知业务异常"
+        },
+        {
+          "name": "NETWORK_EXCEPTION",
+          "type": "string",
+          "describe": "网络异常"
+        },
+        {
+          "name": "TIMEOUT_EXCEPTION",
+          "type": "string",
+          "describe": "超时异常"
+        },
+        {
+          "name": "FORBIDDEN_EXCEPTION",
+          "type": "string",
+          "describe": "禁止访问异常"
+        },
+        {
+          "name": "SERIALIZATION_EXCEPTION",
+          "type": "string",
+          "describe": "序列化异常"
+        },
+        {
+          "name": "CONFIG_EXCEPTION",
+          "type": "string",
+          "describe": "配置加载异常"
+        },
+        {
+          "name": "UNKNOWN_EXCEPTION",
+          "type": "string",
+          "describe": "未知系统异常"
+        },
+        {
+          "name": "bizFailure",
+          "type": "string",
+          "describe": "从应用启动截止当前，该功能号业务错误失败次数"
+        },
+        {
+          "name": "sysFailure",
+          "type": "string",
+          "describe": "从应用启动截止当前，该功能号系统错误失败次数"
+        }
+      ]
+    },
+    {
+      "name": "mqConsumers",
+      "describe": "MQ订阅实例统计",
+      "display": "lineChart",
+      "field": [
+        {
+          "name": "success",
+          "type": "integer",
+          "describe": "消息消费成功总次数"
+        },
+        {
+          "name": "failure",
+          "type": "integer",
+          "describe": "消息消费失败总次数"
+        },
+        {
+          "name": "intervalSuccess",
+          "type": "integer",
+          "describe": "周期内消息消费成功次数"
+        },
+        {
+          "name": "intervalFailure",
+          "type": "integer",
+          "describe": "周期内消息消费失败次数"
+        },
+        {
+          "name": "failureMap",
+          "type": "string",
+          "describe": "消息消费异常统计数据"
+        },
+        {
+          "name": "lastTime",
+          "type": "string",
+          "describe": "消息最近消费时间"
+        }
+      ]
+    },
+    {
+      "name": "mqPublishers",
+      "describe": "MQ发布实例统计",
+      "display": "lineChart",
+      "field": [
+        {
+          "name": "success",
+          "type": "integer",
+          "describe": "消息发布成功总次数"
+        },
+        {
+          "name": "failure",
+          "type": "integer",
+          "describe": "消息发布失败总次数"
+        },
+        {
+          "name": "intervalSuccess",
+          "type": "integer",
+          "describe": "周期内消息发布成功次数"
+        },
+        {
+          "name": "intervalFailure",
+          "type": "integer",
+          "describe": "周期内消息发布失败次数"
+        },
+        {
+          "name": "failureMap",
+          "type": "string",
+          "describe": "消息发布异常统计数据"
+        },
+        {
+          "name": "lastTime",
+          "type": "string",
+          "describe": "消息最近发布时间"
+        }
+      ]
+    },
+    {
+      "name": "mqPublishersOrConsumers",
+      "tags": "instanceId",
+      "describe": "MQ发布订阅实例详情",
+      "field": [
+        {
+          "name": "instanceId",
+          "type": "string",
+          "describe": "实例ID"
+        },
+        {
+          "name": "success",
+          "type": "integer",
+          "describe": "消息成功次数"
+        },
+        {
+          "name": "failure",
+          "type": "integer",
+          "describe": "消息失败次数"
+        },
+        {
+          "name": "failureMap",
+          "type": "string",
+          "describe": "消息异常统计数据"
+        },
+        {
+          "name": "lastTime",
+          "type": "string",
+          "describe": "消息最近执行时间"
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "describe": "身份"
+        }
+      ]
+    },
+    {
+      "name": "amqpBinderConnection",
+      "tags": "binderId",
+      "describe": "MQ客户端binder连接指标",
+      "field": [
+        {
+          "name": "binderId",
+          "type": "string",
+          "describe": "binderID"
+        },
+        {
+          "name": "connectionCount",
+          "type": "integer",
+          "describe": "binder连接数"
+        }
+      ]
+    },
+    {
+      "name": "amqpInstanceConnection",
+      "describe": "MQ客户端实例连接指标",
+      "field": [
+        {
+          "name": "binderId",
+          "type": "string",
+          "describe": "binderID"
+        },
+        {
+          "name": "outputId",
+          "type": "string",
+          "describe": "发布实例ID"
+        },
+        {
+          "name": "inputId",
+          "type": "string",
+          "describe": "订阅实例ID"
+        },
+        {
+          "name": "channelTotal",
+          "type": "integer",
+          "describe": "当前channel总数"
+        },
+        {
+          "name": "channelActive",
+          "type": "integer",
+          "describe": "活跃channel个数"
+        },
+        {
+          "name": "channelIdle",
+          "type": "integer",
+          "describe": "空闲channel个数"
+        },
+        {
+          "name": "channelNormal",
+          "type": "integer",
+          "describe": "正常channel个数"
+        },
+        {
+          "name": "channelClosed",
+          "type": "integer",
+          "describe": "异常channel个数"
+        },
+        {
+          "name": "concurrency",
+          "type": "integer",
+          "describe": "线程个数"
+        }
+      ]
+    },
+    {
+      "name": "serviceProviderThread",
+      "tags": "serviceThreadPoolName",
+      "describe": "服务生产者正在running的线程指标",
+      "field": [
+        {
+          "name": "serviceThreadPoolName",
+          "type": "string",
+          "describe": "业务线程池名"
+        },
+        {
+          "name": "maxPoolSize",
+          "type": "integer",
+          "describe": "业务线程池处理线程总数"
+        },
+        {
+          "name": "corePoolSize",
+          "type": "integer",
+          "describe": "业务线程池核心线程数"
+        },
+        {
+          "name": "currentPoolSize",
+          "type": "integer",
+          "describe": "业务线程池当前线程数"
+        },
+        {
+          "name": "largestPoolSize",
+          "type": "integer",
+          "describe": "业务线程池曾经到达过的最大线程数"
+        },
+        {
+          "name": "taskCount",
+          "type": "integer",
+          "describe": "业务线程池计划执行的任务数"
+        },
+        {
+          "name": "completedTaskCount",
+          "type": "integer",
+          "describe": "业务线程池已经执行完的任务数"
+        },
+        {
+          "name": "queueSize",
+          "type": "integer",
+          "describe": "业务线程池线程队列大小"
+        },
+        {
+          "name": "queueRemainingCapacity",
+          "type": "integer",
+          "describe": "业务线程池剩余队列容量"
+        },
+        {
+          "name": "threadName",
+          "type": "string",
+          "describe": "线程名"
+        },
+        {
+          "name": "functionId",
+          "type": "string",
+          "describe": "功能号"
+        },
+        {
+          "name": "executedTime",
+          "type": "string",
+          "describe": "线程已执行时间(毫秒)"
+        }
+      ]
+    },
+    {
+      "name": "serviceProviderWholeThread",
+      "tags": "serviceThreadPoolName",
+      "describe": "服务生产者线程指标",
+      "field": [
+        {
+          "name": "serviceThreadPoolName",
+          "type": "string",
+          "describe": "业务线程池名"
+        },
+        {
+          "name": "maxPoolSize",
+          "type": "string",
+          "describe": "处理线程总数"
+        },
+        {
+          "name": "corePoolSize",
+          "type": "string",
+          "describe": "核心线程数"
+        },
+        {
+          "name": "currentPoolSize",
+          "type": "string",
+          "describe": "当前线程数"
+        },
+        {
+          "name": "largestPoolSize",
+          "type": "string",
+          "describe": "曾经到达过的最大线程数"
+        },
+        {
+          "name": "taskCount",
+          "type": "string",
+          "describe": "计划执行的任务数"
+        },
+        {
+          "name": "completedTaskCount",
+          "type": "string",
+          "describe": "已经执行完的任务数"
+        },
+        {
+          "name": "queueSize",
+          "type": "string",
+          "describe": "线程队列大小"
+        },
+        {
+          "name": "queueRemainingCapacity",
+          "type": "string",
+          "describe": "剩余队列容量"
+        },
+        {
+          "name": "runningThreads",
+          "type": "string",
+          "describe": "正在running的线程"
+        }
+      ]
+    },
+    {
+      "name": "clientChannel",
+      "describe": "服务生产者正常客户端连接信息指标",
+      "field": [
+        {
+          "name": "remoteIP",
+          "type": "string",
+          "describe": "客户端IP"
+        },
+        {
+          "name": "remotePort",
+          "type": "string",
+          "describe": "客户端端口"
+        },
+        {
+          "name": "clientName",
+          "type": "string",
+          "describe": "客户端身份标识"
+        }
+      ]
+    },
+    {
+      "name": "warningGcInfo",
+      "describe": "耗时超过设定值的老年代回收器详细信息列表",
+      "field": [
+        {
+          "name": "occur_time",
+          "type": "string",
+          "describe": "进行full gc的时间"
+        },
+        {
+          "name": "gc_cause",
+          "type": "string",
+          "describe": "导致full gc的原因"
+        },
+        {
+          "name": "gc_duration",
+          "type": "string",
+          "describe": "单次full gc的耗时"
+        },
+        {
+          "name": "gen_usage_changes_after_gc",
+          "type": "string",
+          "describe": "在进行该次full gc后，不同空间的使用内存情况变化"
+        },
+        {
+          "name": "gen_commit_changes_after_gc",
+          "type": "string",
+          "describe": "在进行该次full gc后，不同空间的提交内存情况变化"
+        }
+      ]
+    },
+    {
+      "name": "warningYoungGcInfo",
+      "describe": "耗时超过设定值的年轻代回收器详细信息列表",
+      "field": [
+        {
+          "name": "occur_time",
+          "type": "string",
+          "describe": "进行young gc的时间"
+        },
+        {
+          "name": "gc_cause",
+          "type": "string",
+          "describe": "导致young gc的原因"
+        },
+        {
+          "name": "gc_duration",
+          "type": "string",
+          "describe": "单次young gc的耗时"
+        },
+        {
+          "name": "gen_usage_changes_after_gc",
+          "type": "string",
+          "describe": "在进行该次young gc后，不同空间的使用内存情况变化"
+        },
+        {
+          "name": "gen_commit_changes_after_gc",
+          "type": "string",
+          "describe": "在进行该次young gc后，不同空间的提交内存情况变化"
+        }
+      ]
+    },
+    {
+      "name": "webServer",
+      "describe": "tomcat线程池指标",
+      "field": [
+        {
+          "name": "maxPoolSize",
+          "type": "string",
+          "describe": "最大线程数"
+        },
+        {
+          "name": "corePoolSize",
+          "type": "string",
+          "describe": "核心线程数"
+        },
+        {
+          "name": "currentPoolSize",
+          "type": "string",
+          "describe": "当前线程数"
+        },
+        {
+          "name": "largestPoolSize",
+          "type": "string",
+          "describe": "历史最大线程数"
+        },
+        {
+          "name": "taskCount",
+          "type": "string",
+          "describe": "计划执行任务数"
+        },
+        {
+          "name": "completedTaskCount",
+          "type": "string",
+          "describe": "已经执行完成任务数"
+        },
+        {
+          "name": "queueSize",
+          "type": "string",
+          "describe": "任务队列大小"
+        },
+        {
+          "name": "queueRemainingCapacity",
+          "type": "string",
+          "describe": "剩余队列容量"
+        }
+      ]
+    },
+    {
+      "name": "localCacheTableStats",
+      "tags": "appName,tableName",
+      "describe": "本地缓存表缓存详情信息",
+      "field": [
+        {
+          "name": "appName",
+          "type": "string",
+          "describe": "应用名称"
+        },
+        {
+          "name": "appRecord",
+          "type": "string",
+          "describe": "应用缓存总记录数"
+        },
+        {
+          "name": "appSize",
+          "type": "string",
+          "describe": "应用内存总使用量（Byte）"
+        },
+        {
+          "name": "tableName",
+          "type": "string",
+          "describe": "表名称"
+        },
+        {
+          "name": "tableRecord",
+          "type": "string",
+          "describe": "表缓存记录数"
+        },
+        {
+          "name": "tableSize",
+          "type": "string",
+          "describe": "表内存使用量（Byte）"
+        },
+        {
+          "name": "tableLoadTime",
+          "type": "string",
+          "describe": "整表加载时间（ms）"
+        }
+      ]
+    },
+    {
+      "name": "localCacheError",
+      "tags": "time",
+      "describe": "本地缓存异常刷新日志",
+      "field": [
+        {
+          "name": "time",
+          "type": "string",
+          "describe": "时间"
+        },
+        {
+          "name": "message",
+          "type": "string",
+          "describe": "异常日志内容"
+        }
+      ]
+    },
+    {
+      "name": "localCacheThread",
+      "describe": "本地缓存线程池执行信息",
+      "field": [
+        {
+          "name": "asyncReceiveThreadPool_maxPoolSize",
+          "type": "string",
+          "describe": "异步接收线程池最大线程数"
+        },
+        {
+          "name": "asyncReceiveThreadPool_corePoolSize",
+          "type": "string",
+          "describe": "异步接收线程池核心线程数"
+        },
+        {
+          "name": "asyncReceiveThreadPool_currentPoolSize",
+          "type": "string",
+          "describe": "异步接收线程池当前线程数"
+        },
+        {
+          "name": "asyncReceiveThreadPool_largestPoolSize",
+          "type": "string",
+          "describe": "异步接收线程池历史最大线程数"
+        },
+        {
+          "name": "asyncReceiveThreadPool_taskCount",
+          "type": "string",
+          "describe": "异步接收线程池执行过的任务数"
+        },
+        {
+          "name": "asyncReceiveThreadPool_completedTaskCount",
+          "type": "string",
+          "describe": "异步接收线程池完成的任务数"
+        },
+        {
+          "name": "asyncReceiveThreadPool_queueSize",
+          "type": "string",
+          "describe": "异步接收线程池队列大小"
+        },
+        {
+          "name": "asyncReceiveThreadPool_queueRemainingCapacity",
+          "type": "string",
+          "describe": "异步接收线程池当前可用容量"
+        },
+        {
+          "name": "asyncProcessThreadPool_maxPoolSize",
+          "type": "string",
+          "describe": "异步处理线程池最大线程数"
+        },
+        {
+          "name": "asyncProcessThreadPool_corePoolSize",
+          "type": "string",
+          "describe": "异步处理线程池核心线程数"
+        },
+        {
+          "name": "asyncProcessThreadPool_currentPoolSize",
+          "type": "string",
+          "describe": "异步处理线程池当前线程数"
+        },
+        {
+          "name": "asyncProcessThreadPool_largestPoolSize",
+          "type": "string",
+          "describe": "异步处理线程池历史最大线程数"
+        },
+        {
+          "name": "asyncProcessThreadPool_taskCount",
+          "type": "string",
+          "describe": "异步处理线程池执行过的任务数"
+        },
+        {
+          "name": "asyncProcessThreadPool_completedTaskCount",
+          "type": "string",
+          "describe": "异步处理线程池完成的任务数"
+        },
+        {
+          "name": "asyncProcessThreadPool_queueSize",
+          "type": "string",
+          "describe": "异步处理线程池队列大小"
+        },
+        {
+          "name": "asyncProcessThreadPool_queueRemainingCapacity",
+          "type": "string",
+          "describe": "异步处理线程池当前可用容量"
+        },
+        {
+          "name": "remoteThreadPool_maxPoolSize",
+          "type": "string",
+          "describe": "通知线程池最大线程数"
+        },
+        {
+          "name": "remoteThreadPool_corePoolSize",
+          "type": "string",
+          "describe": "通知线程池核心线程数"
+        },
+        {
+          "name": "remoteThreadPool_currentPoolSize",
+          "type": "string",
+          "describe": "通知线程池当前线程数"
+        },
+        {
+          "name": "remoteThreadPool_largestPoolSize",
+          "type": "string",
+          "describe": "通知线程池历史最大线程数"
+        },
+        {
+          "name": "remoteThreadPool_taskCount",
+          "type": "string",
+          "describe": "通知线程池执行过的任务数"
+        },
+        {
+          "name": "remoteThreadPool_completedTaskCount",
+          "type": "string",
+          "describe": "通知线程池完成的任务数"
+        },
+        {
+          "name": "remoteThreadPool_queueSize",
+          "type": "string",
+          "describe": "通知线程池队列大小"
+        },
+        {
+          "name": "remoteThreadPool_queueRemainingCapacity",
+          "type": "string",
+          "describe": "通知线程池当前可用容量"
+        }
+      ]
+    },
+    {
+      "name": "localCacheAsyncProcessThreadPoolExecuteInfo",
+      "tags": "application,tableName,key,threadName",
+      "describe": "本地缓存异步处理线程池线程执行信息",
+      "field": [
+        {
+          "name": "application",
+          "type": "string",
+          "describe": "应用名称"
+        },
+        {
+          "name": "tableName",
+          "type": "string",
+          "describe": "表名称"
+        },
+        {
+          "name": "key",
+          "type": "string",
+          "describe": "索引名称"
+        },
+        {
+          "name": "threadName",
+          "type": "string",
+          "describe": "线程名称"
+        },
+        {
+          "name": "cost",
+          "type": "string",
+          "describe": "耗时（ms）"
+        }
+      ]
+    },
+    {
+      "name": "localCacheLargeIndexInfo",
+      "tags": "table,key",
+      "describe": "本地缓存大索引统计",
+      "field": [
+        {
+          "name": "table",
+          "type": "string",
+          "describe": "表名"
+        },
+        {
+          "name": "key",
+          "type": "string",
+          "describe": "索引"
+        },
+        {
+          "name": "count",
+          "type": "string",
+          "describe": "缓存数"
+        }
+      ]
+    },
+    {
+      "name": "mcJavaClientPublishFlow",
+      "tags": "name,topic",
+      "describe": "MC客户端发布消息",
+      "field": [
+        {
+          "name": "name",
+          "type": "string",
+          "describe": "发布者"
+        },
+        {
+          "name": "topic",
+          "type": "string",
+          "describe": "主题"
+        },
+        {
+          "name": "send",
+          "type": "string",
+          "describe": "发送成功数"
+        },
+        {
+          "name": "fail",
+          "type": "string",
+          "describe": "发送失败数"
+        },
+        {
+          "name": "ack",
+          "type": "string",
+          "describe": "确认数"
+        }
+      ]
+    },
+    {
+      "name": "mcJavaClientPublishers",
+      "tags": "name,topic",
+      "describe": "MC客户端发布者信息",
+      "field": [
+        {
+          "name": "name",
+          "type": "string",
+          "describe": "业务发布者"
+        },
+        {
+          "name": "topic",
+          "type": "string",
+          "describe": "发布主题"
+        },
+        {
+          "name": "timestamp",
+          "type": "string",
+          "describe": "时间戳"
+        },
+        {
+          "name": "realName",
+          "type": "string",
+          "describe": "发布者"
+        },
+        {
+          "name": "messageNo",
+          "type": "string",
+          "describe": "消息序号"
+        }
+      ]
+    },
+    {
+      "name": "mcJavaClientSubscribeFlow",
+      "tags": "name",
+      "describe": "MC客户端订阅消息",
+      "field": [
+        {
+          "name": "name",
+          "type": "string",
+          "describe": "发布者"
+        },
+        {
+          "name": "receive",
+          "type": "string",
+          "describe": "接收消息数"
+        },
+        {
+          "name": "ack",
+          "type": "string",
+          "describe": "成功确认消息数"
+        }
+      ]
+    },
+    {
+      "name": "mcJavaClientSubscribers",
+      "tags": "name,topics,timestamp",
+      "describe": "MC客户端订阅者信息",
+      "field": [
+        {
+          "name": "name",
+          "type": "string",
+          "describe": "业务订阅者"
+        },
+        {
+          "name": "topics",
+          "type": "string",
+          "describe": "订阅主题"
+        },
+        {
+          "name": "timestamp",
+          "type": "string",
+          "describe": "时间戳"
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "describe": "订阅者状态"
+        },
+        {
+          "name": "messageNo",
+          "type": "string",
+          "describe": "消息序号"
+        }
+      ]
+    },
+    {
+      "name": "mcJavaClientSubscriberConnection",
+      "describe": "MC客户端订阅者会话连接历史信息",
+      "field": [
+        {
+          "name": "subscriber",
+          "type": "string",
+          "describe": "订阅者"
+        },
+        {
+          "name": "subscriberNo",
+          "type": "string",
+          "describe": "订阅序号"
+        },
+        {
+          "name": "timestamp",
+          "type": "string",
+          "describe": "时间戳"
+        }
+      ]
+    },
+    {
+      "name": "dynamicDataSourceMonitor",
+      "tags": "dataSourceName,type",
+      "describe": "多数据源组件信息",
+      "field": [
+        {
+          "name": "poolName",
+          "type": "string",
+          "describe": "连接池名称"
+        },
+        {
+          "name": "dataSourceName",
+          "type": "string",
+          "describe": "数据源名称"
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "describe": "数据源类型"
+        },
+        {
+          "name": "activeCount",
+          "type": "string",
+          "describe": "活跃连接数"
+        },
+        {
+          "name": "idleCount",
+          "type": "string",
+          "describe": "空闲连接数"
+        },
+        {
+          "name": "totalCount",
+          "type": "string",
+          "describe": "总连接数"
+        },
+        {
+          "name": "waitingCount",
+          "type": "string",
+          "describe": "等待连接线程数"
+        },
+        {
+          "name": "catalog",
+          "type": "string",
+          "describe": "catalog数据库配置"
+        },
+        {
+          "name": "timeout",
+          "type": "string",
+          "describe": "最大等待时间（ms）"
+        },
+        {
+          "name": "keepAliveTime",
+          "type": "string",
+          "describe": "最长闲置时间（ms）"
+        },
+        {
+          "name": "maxActive",
+          "type": "string",
+          "describe": "最大活跃连接数"
+        },
+        {
+          "name": "maxPoolSize",
+          "type": "string",
+          "describe": "最大总连接数"
+        },
+        {
+          "name": "minIdle",
+          "type": "string",
+          "describe": "最小空闲连接数"
+        },
+        {
+          "name": "maxLifetime",
+          "type": "string",
+          "describe": "连接最长生命周期（ms）"
+        },
+        {
+          "name": "validationTimeout",
+          "type": "string",
+          "describe": "测试活动最大时间量（ms）"
+        },
+        {
+          "name": "leakDetectionThreshold",
+          "type": "string",
+          "describe": "可能的连接泄漏"
+        }
+      ]
+    },
+    {
+      "name": "t2T3SdkHealth",
+      "tags": "sdkType,server",
+      "describe": "T2/T3SDK健康监控",
+      "field": [
+        {
+          "name": "sdkType",
+          "type": "string",
+          "describe": "SDK缓存组件健康检查标识"
+        },
+        {
+          "name": "sdkStatus",
+          "type": "string",
+          "describe": "SDK缓存组件检查状态"
+        },
+        {
+          "name": "server",
+          "type": "string",
+          "describe": "客户端"
+        },
+        {
+          "name": "is_connected",
+          "type": "string",
+          "describe": "连接池中Connection连接状态"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "describe": "连接池中Connection连接名称"
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "describe": "连接池中Connection状态标识"
+        }
+      ]
+    },
+    {
+      "name": "t2sdkMonitor",
+      "tags": "parentName",
+      "describe": "T2客户端请求失败信息",
+      "field": [
+        {
+          "name": "parentName",
+          "type": "string",
+          "describe": "单个客户端名称"
+        },
+        {
+          "name": "failRequestCount",
+          "type": "string",
+          "describe": "客户端请求失败信息"
+        }
+      ]
+    },
+    {
+      "name": "t3sdkMonitor",
+      "tags": "parentName",
+      "describe": "T3客户端请求失败信息",
+      "field": [
+        {
+          "name": "parentName",
+          "type": "string",
+          "describe": "单个客户端名称"
+        },
+        {
+          "name": "failRequestCount",
+          "type": "string",
+          "describe": "客户端请求失败信息"
+        }
+      ]
+    }
+  ],
+  "explain": "<b>监控目的：</b>\n\t了解微服务健康状态、服务调用情况等信息\n\t\n\t<b>监控说明：</b>\n\t主要监控以下模块\n\t1）cpu：CPU使用情况\n\t2）memory：JVM内存空间\n\t3）registry：服务注册指标\n\t4）server：服务连接指标\n\t5）spring：Spring环境指标\n\t6）threadpool：处理线程池指标\n\t7）consumers：消费者信息\n\t8）providers：生产者信息\n\t9）mqConsumers：MQ订阅实例统计\n\t10）mqPublishers：MQ发布实例统计",
+  "monitorKey": "",
+  "microServiceTodayAllAPIs": "0",
+  "microServiceTodayAllAPISuccs": "0",
+  "microServiceLastTime": "1736131611467",
+  "id": ""
+}

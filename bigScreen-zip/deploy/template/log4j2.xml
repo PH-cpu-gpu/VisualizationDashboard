@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration status="WARN" name="${app_name}" packages="org.apache.logging.log4j.core.pattern">
+    <properties>
+    </properties>
+    <appenders>
+        #set($tmp="$")
+        #set($tmpDate="{date:yyyy-MM}")
+        #if("$!is_clear_log"=="true")
+        <RollingFile name="RollingFile" fileName="${workspace}/${app_name}/logs/app.log" filePattern="${workspace}/${app_name}/logs/app-${file_pattern}">
+            <PatternLayout>
+                <Pattern>${log_pattern}</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="250 MB" />
+            </Policies>
+            <Delete basePath="${workspace}/${app_name}/logs/" maxDepth="1">
+                <IfFileName glob="app*">
+                    <!--删除多少天前的文件或者大于多大的文件 -->
+                    <IfAny>
+                        <IfLastModified age="${log_day}d"/>
+                        <IfAccumulatedFileSize exceeds="${log_size} ${log_suffix}"/>
+                    </IfAny>
+                </IfFileName>
+            </Delete>
+        </RollingFile>
+        #else
+        <RollingFile name="RollingFile" fileName="${workspace}/${app_name}/logs/app.log" filePattern="${workspace}/${app_name}/logs/app-${file_pattern}">
+            <PatternLayout>
+                <Pattern>${log_pattern}</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="250 MB" />
+            </Policies>
+        </RollingFile>
+        #end
+        #if("$!is_clear_log"=="true")
+        <RollingFile name="TraceLog" fileName="${workspace}/${app_name}/logs/TraceLog.log" filePattern="${workspace}/${app_name}/logs/TraceLog-${file_pattern}">
+            <PatternLayout pattern="%msg%n" />
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="250 MB" />
+            </Policies>
+            <DefaultRolloverStrategy max="${log_maxCount}">
+                <Delete basePath="${workspace}/${app_name}/logs/" maxDepth="1">
+                    <IfFileName glob="TraceLog*">
+                        <!--删除多少天前的文件或者大于多大的文件 -->
+                        <IfAny>
+                            <IfLastModified age="${log_day}d"/>
+                            <IfAccumulatedFileSize exceeds="${log_size} ${log_suffix}"/>
+                        </IfAny>
+                    </IfFileName>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+        #else
+        <RollingFile name="TraceLog" fileName="${workspace}/${app_name}/logs/TraceLog.log" filePattern="${workspace}/${app_name}/logs/TraceLog-${file_pattern}">
+            <PatternLayout pattern="%msg%n" />
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="250 MB" />
+            </Policies>
+        </RollingFile>
+        #end
+        #if("$!is_clear_log"=="true")
+        <RollingFile name="SyserrLog" fileName="${workspace}/${app_name}/logs/SyserrLog.log" filePattern="${workspace}/${app_name}/logs/SyserrLog-${file_pattern}">
+            <PatternLayout pattern="%msg%n" />
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="250 MB" />
+            </Policies>
+            <DefaultRolloverStrategy max="${log_maxCount}">
+                <Delete basePath="${workspace}/${app_name}/logs/" maxDepth="1">
+                    <IfFileName glob="SyserrLog*">
+                        <!--删除多少天前的文件或者大于多大的文件 -->
+                        <IfAny>
+                            <IfLastModified age="${log_day}d"/>
+                            <IfAccumulatedFileSize exceeds="${log_size} ${log_suffix}"/>
+                        </IfAny>
+                    </IfFileName>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+        #else
+        <RollingFile name="SyserrLog" fileName="${workspace}/${app_name}/logs/SyserrLog.log" filePattern="${workspace}/${app_name}/logs/SyserrLog-${file_pattern}">
+            <PatternLayout pattern="%msg%n" />
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="250 MB" />
+            </Policies>
+        </RollingFile>
+        #end
+        #if("$!is_clear_log"=="true")
+        <RollingFile name="BizerrLog" fileName="${workspace}/${app_name}/logs/BizerrLog.log" filePattern="${workspace}/${app_name}/logs/BizerrLog-${file_pattern}">
+            <PatternLayout pattern="%msg%n" />
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="250 MB" />
+            </Policies>
+        </RollingFile>
+        #else
+        <RollingFile name="BizerrLog" fileName="${workspace}/${app_name}/logs/BizerrLog.log" filePattern="${workspace}/${app_name}/logs/BizerrLog-${file_pattern}">
+            <PatternLayout pattern="%msg%n" />
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="250 MB" />
+            </Policies>
+            <DefaultRolloverStrategy max="${log_maxCount}">
+                <Delete basePath="${workspace}/${app_name}/logs/" maxDepth="1">
+                    <IfFileName glob="BizerrLog*">
+                        <!--删除多少天前的文件或者大于多大的文件 -->
+                        <IfAny>
+                            <IfLastModified age="${log_day}d"/>
+                            <IfAccumulatedFileSize exceeds="${log_size} ${log_suffix}"/>
+                        </IfAny>
+                    </IfFileName>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+        #end
+        #if("$!is_clear_log"=="true")
+        <RollingFile name="BizLog" fileName="${workspace}/${app_name}/logs/Bizlog.log" filePattern="${workspace}/${app_name}/logs/Bizlog-${file_pattern}">
+            <PatternLayout pattern="%hslog%n" />
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="250 MB" />
+            </Policies>
+            <DefaultRolloverStrategy max="${log_maxCount}">
+                <Delete basePath="${workspace}/${app_name}/logs/" maxDepth="1">
+                    <IfFileName glob="BizLog*">
+                        <!--删除多少天前的文件或者大于多大的文件 -->
+                        <IfAny>
+                            <IfLastModified age="${log_day}d"/>
+                            <IfAccumulatedFileSize exceeds="${log_size} ${log_suffix}"/>
+                        </IfAny>
+                    </IfFileName>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+        #else
+        <RollingFile name="BizLog" fileName="${workspace}/${app_name}/logs/Bizlog.log" filePattern="${workspace}/${app_name}/logs/Bizlog-${file_pattern}">
+            <PatternLayout pattern="%hslog%n" />
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="250 MB" />
+            </Policies>
+        </RollingFile>
+        #end
+        #if($!{rpc_trace_log} == true)
+        <Async name="AsyncTraceLog">
+            <AppenderRef ref="TraceLog"/>
+        </Async>
+        #end
+
+        <Async name="AsyncTraceLog">
+            <AppenderRef ref="TraceLog" />
+        </Async>
+
+        <Async name="AsyncSyserrLog">
+            <AppenderRef ref="SyserrLog" />
+        </Async>
+
+        <Async name="AsyncBizerrLog">
+            <AppenderRef ref="BizerrLog" />
+        </Async>
+
+        <Async name="AsyncRollingFile">
+            <AppenderRef ref="RollingFile" />
+        </Async>
+    </appenders>
+
+    <loggers>
+        <AsyncLogger name="com.hundsun.jrescloud.common.log.trace" level="info" additivity="false">
+            <AppenderRef ref="AsyncTraceLog" />
+        </AsyncLogger>
+
+        <AsyncLogger name="com.hundsun.jrescloud.common.log.syserr" level="info" additivity="false">
+            <AppenderRef ref="AsyncSyserrLog" />
+        </AsyncLogger>
+
+        <AsyncLogger name="com.hundsun.jrescloud.common.log.bizerr" level="info" additivity="false">
+            <AppenderRef ref="AsyncBizerrLog" />
+        </AsyncLogger>
+
+        <Logger name="com.hundsun.adapter" level="info" additivity="false">
+            <AppenderRef ref="BizLog" />
+            <AppenderRef ref="RollingFile" />
+        </Logger>
+
+        <root level="${log_level}">
+            <AppenderRef ref="AsyncRollingFile" />
+            <AppenderRef ref="RollingFile" />
+        </root>
+    </loggers>
+
+</configuration>

@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjzg.mapper.AlertMapper">
+
+    <!-- ========== 告警规则 ========== -->
+
+    <select id="selectAllRules" resultType="com.gjzg.entity.AlertRule">
+        SELECT ID AS id, TARGET_TYPE AS targetType, TARGET_ID AS targetId,
+               METRIC_NAME AS metricName, OPERATOR AS operator,
+               THRESHOLD_VALUE AS thresholdValue, ALERT_LEVEL AS alertLevel,
+               TRIGGER_PERIODS AS triggerPeriods, RECOVER_PERIODS AS recoverPeriods,
+               ENABLED AS enabled, CREATE_TIME AS createTime
+        FROM T_MT_ALERT_RULE
+        ORDER BY CREATE_TIME DESC
+    </select>
+
+    <select id="selectEnabledRules" resultType="com.gjzg.entity.AlertRule">
+        SELECT ID AS id, TARGET_TYPE AS targetType, TARGET_ID AS targetId,
+               METRIC_NAME AS metricName, OPERATOR AS operator,
+               THRESHOLD_VALUE AS thresholdValue, ALERT_LEVEL AS alertLevel,
+               TRIGGER_PERIODS AS triggerPeriods, RECOVER_PERIODS AS recoverPeriods,
+               ENABLED AS enabled, CREATE_TIME AS createTime
+        FROM T_MT_ALERT_RULE
+        WHERE ENABLED = 1
+          AND TARGET_TYPE = #{targetType}
+          AND TARGET_ID = #{targetId}
+    </select>
+
+    <select id="selectRuleById" resultType="com.gjzg.entity.AlertRule">
+        SELECT ID AS id, TARGET_TYPE AS targetType, TARGET_ID AS targetId,
+               METRIC_NAME AS metricName, OPERATOR AS operator,
+               THRESHOLD_VALUE AS thresholdValue, ALERT_LEVEL AS alertLevel,
+               TRIGGER_PERIODS AS triggerPeriods, RECOVER_PERIODS AS recoverPeriods,
+               ENABLED AS enabled, CREATE_TIME AS createTime
+        FROM T_MT_ALERT_RULE
+        WHERE ID = #{id}
+    </select>
+
+    <insert id="insertRule">
+        INSERT INTO T_MT_ALERT_RULE (ID, TARGET_TYPE, TARGET_ID, METRIC_NAME, OPERATOR, THRESHOLD_VALUE, ALERT_LEVEL, ENABLED, TRIGGER_PERIODS, RECOVER_PERIODS, CREATE_TIME)
+        VALUES (#{id}, #{targetType}, #{targetId}, #{metricName}, #{operator}, #{thresholdValue}, #{alertLevel}, #{enabled}, #{triggerPeriods}, #{recoverPeriods}, SYSDATE)
+    </insert>
+
+    <update id="updateRule">
+        UPDATE T_MT_ALERT_RULE
+        SET TARGET_TYPE = #{targetType},
+            TARGET_ID = #{targetId},
+            METRIC_NAME = #{metricName},
+            OPERATOR = #{operator},
+            THRESHOLD_VALUE = #{thresholdValue},
+            ALERT_LEVEL = #{alertLevel},
+            ENABLED = #{enabled},
+            TRIGGER_PERIODS = #{triggerPeriods},
+            RECOVER_PERIODS = #{recoverPeriods}
+        WHERE ID = #{id}
+    </update>
+
+    <delete id="deleteRule">
+        DELETE FROM T_MT_ALERT_RULE WHERE ID = #{id}
+    </delete>
+
+    <update id="detachAlertRecordsByRuleId">
+        UPDATE T_MT_ALERT_RECORD SET RULE_ID = NULL WHERE RULE_ID = #{ruleId}
+    </update>
+
+    <!-- ========== 告警记录 ========== -->
+
+    <insert id="insertAlertRecord">
+        INSERT INTO T_MT_ALERT_RECORD (ID, RULE_ID, TARGET_TYPE, TARGET_ID, TARGET_NAME, SERVER_IP, METRIC_NAME, METRIC_VALUE, THRESHOLD_VALUE, OPERATOR, ALERT_LEVEL, TRIGGER_PERIODS, STATUS, ALERT_TIME)
+        VALUES (#{id}, #{ruleId}, #{targetType}, #{targetId}, #{targetName}, #{serverIp,jdbcType=VARCHAR}, #{metricName}, #{metricValue}, #{thresholdValue}, #{operator}, #{alertLevel}, #{triggerPeriods,jdbcType=NUMERIC}, #{status}, SYSDATE)
+    </insert>
+
+    <update id="resolveAlert">
+        UPDATE T_MT_ALERT_RECORD
+           SET STATUS = 'resolved',
+               RESOLVE_TIME = SYSDATE,
+               RESOLVE_TYPE = 'AUTO'
+         WHERE ID = #{id}
+    </update>
+
+    <select id="selectActiveAlertsByRule" resultType="com.gjzg.entity.AlertRecord">
+        SELECT ID AS id, RULE_ID AS ruleId, TARGET_TYPE AS targetType, TARGET_ID AS targetId,
+               TARGET_NAME AS targetName, SERVER_IP AS serverIp, METRIC_NAME AS metricName,
+               METRIC_VALUE AS metricValue,
+               THRESHOLD_VALUE AS thresholdValue, OPERATOR AS operator,
+               ALERT_LEVEL AS alertLevel, TRIGGER_PERIODS AS triggerPeriods, STATUS AS status,
+               TO_CHAR(ALERT_TIME, 'YYYY-MM-DD HH24:MI:SS') AS alertTime,
+               TO_CHAR(RESOLVE_TIME, 'YYYY-MM-DD HH24:MI:SS') AS resolveTime
+        FROM T_MT_ALERT_RECORD
+        WHERE STATUS = 'active'
+          AND RULE_ID = #{ruleId}
+          AND NVL(SERVER_IP, '#') = NVL(#{serverIp,jdbcType=VARCHAR}, '#')
+    </select>
+
+    <select id="selectAllActiveAlerts" resultType="com.gjzg.entity.AlertRecord">
+        SELECT ID AS id, RULE_ID AS ruleId, TARGET_TYPE AS targetType, TARGET_ID AS targetId,
+               TARGET_NAME AS targetName, SERVER_IP AS serverIp, METRIC_NAME AS metricName,
+               METRIC_VALUE AS metricValue,
+               THRESHOLD_VALUE AS thresholdValue, OPERATOR AS operator,
+               ALERT_LEVEL AS alertLevel, TRIGGER_PERIODS AS triggerPeriods, STATUS AS status,
+               TO_CHAR(ALERT_TIME, 'YYYY-MM-DD HH24:MI:SS') AS alertTime,
+               TO_CHAR(RESOLVE_TIME, 'YYYY-MM-DD HH24:MI:SS') AS resolveTime
+        FROM T_MT_ALERT_RECORD
+        WHERE STATUS = 'active'
+        ORDER BY
+            CASE ALERT_LEVEL WHEN 'critical' THEN 0 ELSE 1 END,
+            ALERT_TIME DESC
+    </select>
+
+    <select id="selectAlertHistory" resultType="com.gjzg.entity.AlertRecord">
+        SELECT * FROM (
+            SELECT ID AS id, RULE_ID AS ruleId, TARGET_TYPE AS targetType, TARGET_ID AS targetId,
+                   TARGET_NAME AS targetName, SERVER_IP AS serverIp, METRIC_NAME AS metricName,
+                   METRIC_VALUE AS metricValue,
+                   THRESHOLD_VALUE AS thresholdValue, OPERATOR AS operator,
+                   ALERT_LEVEL AS alertLevel, TRIGGER_PERIODS AS triggerPeriods, STATUS AS status,
+                   TO_CHAR(ALERT_TIME, 'YYYY-MM-DD HH24:MI:SS') AS alertTime,
+                   TO_CHAR(RESOLVE_TIME, 'YYYY-MM-DD HH24:MI:SS') AS resolveTime
+            FROM T_MT_ALERT_RECORD
+            ORDER BY ALERT_TIME DESC
+        ) WHERE ROWNUM &lt;= #{limit}
+    </select>
+
+</mapper>

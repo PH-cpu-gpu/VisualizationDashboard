@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjzg.mapper.NotifyChannelMapper">
+
+    <sql id="baseColumns">
+        ID AS id, CHANNEL_NAME AS channelName, CHANNEL_TYPE AS channelType,
+        WEBHOOK_URL AS webhookUrl, ENABLED AS enabled,
+        CREATE_TIME AS createTime, UPDATE_TIME AS updateTime
+    </sql>
+
+    <select id="selectAll" resultType="com.gjzg.entity.NotifyChannel">
+        SELECT <include refid="baseColumns"/>
+        FROM T_MT_NOTIFY_CHANNEL
+        ORDER BY CREATE_TIME DESC
+    </select>
+
+    <select id="selectEnabled" resultType="com.gjzg.entity.NotifyChannel">
+        SELECT <include refid="baseColumns"/>
+        FROM T_MT_NOTIFY_CHANNEL
+        WHERE ENABLED = 1
+        ORDER BY CREATE_TIME DESC
+    </select>
+
+    <select id="selectById" resultType="com.gjzg.entity.NotifyChannel">
+        SELECT <include refid="baseColumns"/>
+        FROM T_MT_NOTIFY_CHANNEL
+        WHERE ID = #{id}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO T_MT_NOTIFY_CHANNEL (ID, CHANNEL_NAME, CHANNEL_TYPE, WEBHOOK_URL, ENABLED, CREATE_TIME)
+        VALUES (#{id}, #{channelName}, #{channelType}, #{webhookUrl}, #{enabled}, SYSDATE)
+    </insert>
+
+    <update id="update">
+        UPDATE T_MT_NOTIFY_CHANNEL
+        <set>
+            CHANNEL_NAME = #{channelName},
+            ENABLED = #{enabled},
+            UPDATE_TIME = SYSDATE,
+            <if test="webhookUrl != null and webhookUrl != ''">
+                WEBHOOK_URL = #{webhookUrl},
+            </if>
+        </set>
+        WHERE ID = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM T_MT_NOTIFY_CHANNEL WHERE ID = #{id}
+    </delete>
+
+</mapper>

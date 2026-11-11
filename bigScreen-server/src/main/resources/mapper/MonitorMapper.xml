@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjzg.mapper.MonitorMapper">
+
+    <!-- 查询所有节点的最新指标值（serverIp为空时返回汇总记录，非空时返回指定实例记录） -->
+    <select id="selectAllNodeMetrics" resultType="com.gjzg.api.entity.NodeMetricVO">
+        SELECT
+            ni.ID AS nodeId,
+            ni.NODE_NAME AS nodeName,
+            nmd.METRIC_NAME AS metricName,
+            mvl.METRIC_VALUE AS metricValue,
+            nmd.METRIC_UNIT AS metricUnit,
+            nmd.SORT_ORDER AS sortOrder,
+            mvl.SERVER_IP AS serverIp
+        FROM T_MT_NODE_INFO ni
+        LEFT JOIN T_MT_NODE_METRIC_DEF nmd ON ni.ID = nmd.NODE_ID
+        LEFT JOIN T_MT_METRIC_VALUE_LATEST mvl ON nmd.ID = mvl.METRIC_ID AND mvl.NODE_ID = ni.ID
+        <if test="serverIp != null and serverIp != ''">
+            AND mvl.SERVER_IP = #{serverIp,jdbcType=VARCHAR}
+        </if>
+        <if test="serverIp == null or serverIp == ''">
+            AND mvl.SERVER_IP IS NULL
+        </if>
+        ORDER BY ni.NODE_NAME, nmd.SORT_ORDER
+    </select>
+
+    <!-- 根据节点ID查询该节点的所有最新指标值（支持按实例筛选） -->
+    <select id="selectNodeMetricsByNodeId" resultType="com.gjzg.api.entity.NodeMetricVO">
+        SELECT
+            ni.ID AS nodeId,
+            ni.NODE_NAME AS nodeName,
+            nmd.METRIC_NAME AS metricName,
+            mvl.METRIC_VALUE AS metricValue,
+            nmd.METRIC_UNIT AS metricUnit,
+            nmd.SORT_ORDER AS sortOrder,
+            mvl.SERVER_IP AS serverIp
+        FROM T_MT_NODE_INFO ni
+        LEFT JOIN T_MT_NODE_METRIC_DEF nmd ON ni.ID = nmd.NODE_ID
+        LEFT JOIN T_MT_METRIC_VALUE_LATEST mvl ON nmd.ID = mvl.METRIC_ID AND mvl.NODE_ID = ni.ID
+        <if test="serverIp != null and serverIp != ''">
+            AND mvl.SERVER_IP = #{serverIp,jdbcType=VARCHAR}
+        </if>
+        <if test="serverIp == null or serverIp == ''">
+            AND mvl.SERVER_IP IS NULL
+        </if>
+        WHERE ni.ID = #{nodeId}
+        ORDER BY nmd.SORT_ORDER
+    </select>
+
+    <!-- 查询指定节点的所有实例IP列表（用于前端实例下拉选择） -->
+    <select id="selectDistinctServerIps" resultType="java.lang.String">
+        SELECT DISTINCT SERVER_IP
+        FROM T_MT_METRIC_VALUE_LATEST
+        WHERE NODE_ID = #{nodeId}
+          AND SERVER_IP IS NOT NULL
+        ORDER BY SERVER_IP
+    </select>
+
+    <!-- 根据节点ID查询最新值（METRIC_ID, METRIC_VALUE），用于模拟采集种子值 -->
+    <select id="selectNodeLatestValues" resultType="java.util.HashMap">
+        SELECT METRIC_ID AS "metricId", METRIC_VALUE AS "metricValue"
+        FROM T_MT_METRIC_VALUE_LATEST
+        WHERE NODE_ID = #{nodeId}
+    </select>
+
+    <!-- 查询所有链路的最新指标值 -->
+    <select id="selectAllLinkMetrics" resultType="com.gjzg.api.entity.LinkMetricVO">
+        SELECT
+            li.ID AS linkId,
+            li.LINK_NAME AS linkName,
+            sni.NODE_NAME AS sourceNodeName,
+            tni.NODE_NAME AS targetNodeName,
+            lmd.METRIC_NAME AS metricName,
+            lvl.METRIC_VALUE AS metricValue,
+            lmd.METRIC_UNIT AS metricUnit,
+            lmd.SORT_ORDER AS sortOrder
+        FROM T_MT_LINK_INFO li
+        LEFT JOIN T_MT_NODE_INFO sni ON li.SOURCE_NODE_ID = sni.ID
+        LEFT JOIN T_MT_NODE_INFO tni ON li.TARGET_NODE_ID = tni.ID
+        LEFT JOIN T_MT_LINK_METRIC_DEF lmd ON li.ID = lmd.LINK_ID
+        LEFT JOIN T_MT_LINK_VALUE_LATEST lvl ON lmd.ID = lvl.METRIC_ID AND lvl.LINK_ID = li.ID
+        ORDER BY li.LINK_NAME, lmd.SORT_ORDER
+    </select>
+
+    <!-- 根据链路ID查询该链路的所有最新指标值 -->
+    <select id="selectLinkMetricsByLinkId" resultType="com.gjzg.api.entity.LinkMetricVO">
+        SELECT
+            li.ID AS linkId,
+            li.LINK_NAME AS linkName,
+            sni.NODE_NAME AS sourceNodeName,
+            tni.NODE_NAME AS targetNodeName,
+            lmd.METRIC_NAME AS metricName,
+            lvl.METRIC_VALUE AS metricValue,
+            lmd.METRIC_UNIT AS metricUnit,
+            lmd.SORT_ORDER AS sortOrder
+        FROM T_MT_LINK_INFO li
+        LEFT JOIN T_MT_NODE_INFO sni ON li.SOURCE_NODE_ID = sni.ID
+        LEFT JOIN T_MT_NODE_INFO tni ON li.TARGET_NODE_ID = tni.ID
+        LEFT JOIN T_MT_LINK_METRIC_DEF lmd ON li.ID = lmd.LINK_ID
+        LEFT JOIN T_MT_LINK_VALUE_LATEST lvl ON lmd.ID = lvl.METRIC_ID AND lvl.LINK_ID = li.ID
+        WHERE li.ID = #{linkId}
+        ORDER BY lmd.SORT_ORDER
+    </select>
+
+    <!-- 批量插入节点历史值 -->
+    <insert id="batchInsertNodeHistory">
+        INSERT INTO T_MT_METRIC_VALUE_HISTORY (ID, COLLECT_ID, NODE_ID, METRIC_ID, SERVER_IP, METRIC_VALUE, SOURCE_TIME, CREATE_TIME)
+        <foreach collection="list" item="item" separator="UNION ALL">
+            SELECT SYS_GUID(), #{collectId}, #{item.nodeId}, #{item.metricId}, #{item.serverIp}, #{item.metricValue},
+                   NVL(TO_DATE(#{item.sourceTime}, 'YYYY-MM-DD HH24:MI:SS'), SYSDATE), SYSDATE
+            FROM DUAL
+        </foreach>
+    </insert>
+
+    <!-- 节点最新值去重写入：MERGE 一条语句完成「有则更新、无则插入」 -->
+    <insert id="mergeNodeLatest">
+        MERGE INTO T_MT_METRIC_VALUE_LATEST t
+        USING (
+            SELECT NODE_ID, METRIC_ID, SERVER_IP, METRIC_VALUE, SOURCE_TIME
+            FROM (
+                SELECT q.*,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY NODE_ID, METRIC_ID, SERVER_IP
+                           ORDER BY SOURCE_TIME DESC) AS RN
+                FROM (
+                    <foreach collection="list" item="item" separator="UNION ALL">
+                        SELECT #{item.nodeId} AS NODE_ID, #{item.metricId} AS METRIC_ID, #{item.serverIp} AS SERVER_IP,
+                               #{item.metricValue} AS METRIC_VALUE,
+                               NVL(TO_DATE(#{item.sourceTime}, 'YYYY-MM-DD HH24:MI:SS'), SYSDATE) AS SOURCE_TIME
+                        FROM DUAL
+                    </foreach>
+                ) q
+            ) r
+            WHERE r.RN = 1
+        ) s
+        ON (t.NODE_ID = s.NODE_ID
+            AND t.METRIC_ID = s.METRIC_ID
+            AND (t.SERVER_IP = s.SERVER_IP OR (t.SERVER_IP IS NULL AND s.SERVER_IP IS NULL)))
+        WHEN MATCHED THEN UPDATE SET
+            COLLECT_ID = #{collectId},
+            METRIC_VALUE = s.METRIC_VALUE,
+            SOURCE_TIME = s.SOURCE_TIME,
+            CREATE_TIME = SYSDATE
+        WHEN NOT MATCHED THEN INSERT (ID, COLLECT_ID, NODE_ID, METRIC_ID, SERVER_IP, METRIC_VALUE, SOURCE_TIME, CREATE_TIME)
+            VALUES (SYS_GUID(), #{collectId}, s.NODE_ID, s.METRIC_ID, s.SERVER_IP, s.METRIC_VALUE, s.SOURCE_TIME, SYSDATE)
+    </insert>
+
+    <!-- 根据节点ID查询指标定义映射（METRIC_NAME -> ID, TIME_WINDOW） -->
+    <select id="selectNodeMetricDefMap" resultType="java.util.HashMap">
+        SELECT METRIC_NAME, ID AS METRIC_ID, TIME_WINDOW
+        FROM T_MT_NODE_METRIC_DEF
+        WHERE NODE_ID = #{nodeId}
+        ORDER BY SORT_ORDER
+    </select>
+
+    <!-- 根据链路ID查询指标定义映射（METRIC_NAME -> ID, TIME_WINDOW） -->
+    <select id="selectLinkMetricDefMap" resultType="java.util.HashMap">
+        SELECT METRIC_NAME, ID AS METRIC_ID, TIME_WINDOW
+        FROM T_MT_LINK_METRIC_DEF
+        WHERE LINK_ID = #{linkId}
+        ORDER BY SORT_ORDER
+    </select>
+
+    <!-- 批量插入链路历史值 -->
+    <insert id="batchInsertLinkHistory">
+        INSERT INTO T_MT_LINK_VALUE_HISTORY (ID, COLLECT_ID, LINK_ID, METRIC_ID, METRIC_VALUE, SOURCE_TIME, CREATE_TIME)
+        <foreach collection="list" item="item" separator="UNION ALL">
+            SELECT SYS_GUID(), #{collectId}, #{item.linkId}, #{item.metricId}, #{item.metricValue},
+                   NVL(TO_DATE(#{item.sourceTime}, 'YYYY-MM-DD HH24:MI:SS'), SYSDATE), SYSDATE
+            FROM DUAL
+        </foreach>
+    </insert>
+
+    <!-- 链路最新值去重写入：与节点最新值同理，MERGE 单条语句完成「有则更新、无则插入」 -->
+    <insert id="mergeLinkLatest">
+        MERGE INTO T_MT_LINK_VALUE_LATEST t
+        USING (
+            <!-- 同一 (LINK_ID, METRIC_ID) 在一批中出现多行时，取 SOURCE_TIME 最新的那一行的值 -->
+            SELECT LINK_ID, METRIC_ID, METRIC_VALUE, SOURCE_TIME
+            FROM (
+                SELECT q.*,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY LINK_ID, METRIC_ID
+                           ORDER BY SOURCE_TIME DESC) AS RN
+                FROM (
+                    <foreach collection="list" item="item" separator="UNION ALL">
+                        SELECT #{item.linkId} AS LINK_ID, #{item.metricId} AS METRIC_ID,
+                               #{item.metricValue} AS METRIC_VALUE,
+                               NVL(TO_DATE(#{item.sourceTime}, 'YYYY-MM-DD HH24:MI:SS'), SYSDATE) AS SOURCE_TIME
+                        FROM DUAL
+                    </foreach>
+                ) q
+            ) r
+            WHERE r.RN = 1
+        ) s
+        ON (t.LINK_ID = s.LINK_ID AND t.METRIC_ID = s.METRIC_ID)
+        WHEN MATCHED THEN UPDATE SET
+            COLLECT_ID = #{collectId},
+            METRIC_VALUE = s.METRIC_VALUE,
+            SOURCE_TIME = s.SOURCE_TIME,
+            CREATE_TIME = SYSDATE
+        WHEN NOT MATCHED THEN INSERT (ID, COLLECT_ID, LINK_ID, METRIC_ID, METRIC_VALUE, SOURCE_TIME, CREATE_TIME)
+            VALUES (SYS_GUID(), #{collectId}, s.LINK_ID, s.METRIC_ID, s.METRIC_VALUE, s.SOURCE_TIME, SYSDATE)
+    </insert>
+
+    <!-- 查询节点某指标在某日期的历史数据（serverIp 为空查汇总维度，非空查指定实例） -->
+    <select id="selectNodeMetricHistory" resultType="com.gjzg.api.entity.MetricHistoryVO">
+        SELECT
+            h.METRIC_VALUE AS metricValue,
+            TO_CHAR(h.SOURCE_TIME, 'YYYY-MM-DD HH24:MI:SS') AS sourceTime
+        FROM T_MT_METRIC_VALUE_HISTORY h
+        JOIN T_MT_NODE_METRIC_DEF d ON h.METRIC_ID = d.ID
+        WHERE h.NODE_ID = #{nodeId}
+          AND d.METRIC_NAME = #{metricName}
+        <if test="serverIp != null and serverIp != ''">
+            AND h.SERVER_IP = #{serverIp,jdbcType=VARCHAR}
+        </if>
+        <if test="serverIp == null or serverIp == ''">
+            AND h.SERVER_IP IS NULL
+        </if>
+          AND h.SOURCE_TIME &gt;= TO_DATE(#{startTime}, 'YYYY-MM-DD HH24:MI:SS')
+          AND h.SOURCE_TIME &lt;= TO_DATE(#{endTime}, 'YYYY-MM-DD HH24:MI:SS')
+        ORDER BY h.SOURCE_TIME ASC
+    </select>
+
+    <!-- 查询链路某指标在某日期的历史数据 -->
+    <select id="selectLinkMetricHistory" resultType="com.gjzg.api.entity.MetricHistoryVO">
+        SELECT
+            h.METRIC_VALUE AS metricValue,
+            TO_CHAR(h.SOURCE_TIME, 'YYYY-MM-DD HH24:MI:SS') AS sourceTime
+        FROM T_MT_LINK_VALUE_HISTORY h
+        JOIN T_MT_LINK_METRIC_DEF d ON h.METRIC_ID = d.ID
+        WHERE h.LINK_ID = #{linkId}
+          AND d.METRIC_NAME = #{metricName}
+          AND h.SOURCE_TIME &gt;= TO_DATE(#{startTime}, 'YYYY-MM-DD HH24:MI:SS')
+          AND h.SOURCE_TIME &lt;= TO_DATE(#{endTime}, 'YYYY-MM-DD HH24:MI:SS')
+        ORDER BY h.SOURCE_TIME ASC
+    </select>
+
+    <!-- 查询节点所有指标在最近N小时的历史数据（serverIp 为空查汇总维度，非空查指定实例） -->
+    <select id="selectNodeMetricsTrend" resultType="com.gjzg.api.entity.MetricHistoryVO">
+        SELECT
+            d.METRIC_NAME AS metricName,
+            h.METRIC_VALUE AS metricValue,
+            TO_CHAR(h.SOURCE_TIME, 'YYYY-MM-DD HH24:MI:SS') AS sourceTime
+        FROM T_MT_METRIC_VALUE_HISTORY h
+        JOIN T_MT_NODE_METRIC_DEF d ON h.METRIC_ID = d.ID
+        WHERE h.NODE_ID = #{nodeId}
+        <if test="serverIp != null and serverIp != ''">
+            AND h.SERVER_IP = #{serverIp,jdbcType=VARCHAR}
+        </if>
+        <if test="serverIp == null or serverIp == ''">
+            AND h.SERVER_IP IS NULL
+        </if>
+          AND h.SOURCE_TIME &gt;= SYSDATE - #{hours} / 24
+        ORDER BY d.METRIC_NAME, h.SOURCE_TIME ASC
+    </select>
+
+    <!-- 查询链路所有指标在最近N小时的历史数据 -->
+    <select id="selectLinkMetricsTrend" resultType="com.gjzg.api.entity.MetricHistoryVO">
+        SELECT
+            d.METRIC_NAME AS metricName,
+            h.METRIC_VALUE AS metricValue,
+            TO_CHAR(h.SOURCE_TIME, 'YYYY-MM-DD HH24:MI:SS') AS sourceTime
+        FROM T_MT_LINK_VALUE_HISTORY h
+        JOIN T_MT_LINK_METRIC_DEF d ON h.METRIC_ID = d.ID
+        WHERE h.LINK_ID = #{linkId}
+          AND h.SOURCE_TIME &gt;= SYSDATE - #{hours} / 24
+        ORDER BY d.METRIC_NAME, h.SOURCE_TIME ASC
+    </select>
+
+</mapper>

@@ -1,0 +1,34 @@
+# 依赖与构建产物
+bigScreen-web/node_modules/
+bigScreen-web/dist/
+bigScreen-api/target/
+bigScreen-server/target/
+
+# IDE
+.idea/
+.vscode/
+
+# 日志
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 系统文件
+.DS_Store
+*.local
+
+# 工具缓存
+.codebuddy/
+.qoder/
+
+# 日志与调试截图
+logs/
+
+# 压缩包
+*.zip
+*.rar
+*.7z
+
+# 差异临时文档
+_diff_*.txt

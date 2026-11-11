@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjzg.mapper.NodeMetricDefMapper">
+
+    <resultMap id="BaseResultMap" type="com.gjzg.entity.NodeMetricDef">
+        <id column="ID" property="id" jdbcType="VARCHAR"/>
+        <result column="NODE_ID" property="nodeId" jdbcType="VARCHAR"/>
+        <result column="METRIC_NAME" property="metricName" jdbcType="VARCHAR"/>
+        <result column="METRIC_UNIT" property="metricUnit" jdbcType="VARCHAR"/>
+        <result column="COLLECT_DESC" property="collectDesc" jdbcType="VARCHAR"/>
+        <result column="TIME_WINDOW" property="timeWindow" jdbcType="INTEGER"/>
+        <result column="SORT_ORDER" property="sortOrder" jdbcType="INTEGER"/>
+        <result column="CREATE_TIME" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        ID, NODE_ID, METRIC_NAME, METRIC_UNIT, COLLECT_DESC, TIME_WINDOW, SORT_ORDER, CREATE_TIME
+    </sql>
+
+    <insert id="insert" parameterType="com.gjzg.entity.NodeMetricDef">
+        INSERT INTO T_MT_NODE_METRIC_DEF (
+            ID, NODE_ID, METRIC_NAME, METRIC_UNIT, COLLECT_DESC, TIME_WINDOW, SORT_ORDER, CREATE_TIME
+        ) VALUES (
+            #{id}, #{nodeId}, #{metricName}, #{metricUnit}, #{collectDesc}, #{timeWindow}, #{sortOrder}, #{createTime}
+        )
+    </insert>
+
+    <insert id="batchInsert">
+        INSERT INTO T_MT_NODE_METRIC_DEF (
+            ID, NODE_ID, METRIC_NAME, METRIC_UNIT, COLLECT_DESC, TIME_WINDOW, SORT_ORDER, CREATE_TIME
+        )
+        <foreach collection="list" item="item" separator="UNION ALL">
+            SELECT
+                #{item.id}, #{item.nodeId}, #{item.metricName}, #{item.metricUnit},
+                #{item.collectDesc}, #{item.timeWindow}, #{item.sortOrder}, #{item.createTime}
+            FROM DUAL
+        </foreach>
+    </insert>
+
+    <select id="selectByNodeId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM T_MT_NODE_METRIC_DEF
+        WHERE NODE_ID = #{nodeId}
+        ORDER BY SORT_ORDER, METRIC_NAME
+    </select>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM T_MT_NODE_METRIC_DEF
+        WHERE ID = #{id}
+    </select>
+
+</mapper>

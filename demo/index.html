@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>基础设施监控大屏 - 静态演示</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { overflow: hidden; }
+body { background: #0a0e1a; color: #e0e6ed; font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif; overflow: hidden; width: 100vw; height: 100vh; }
+.topology-page { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+
+/* ===== 标题栏 ===== */
+.page-title { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); font-size: 26px; font-weight: 700; letter-spacing: 6px; color: #4dabf7; text-shadow: 0 0 20px rgba(77,171,247,0.5), 0 0 40px rgba(77,171,247,0.2); z-index: 10; white-space: nowrap; }
+.page-title::before, .page-title::after { content: ''; position: absolute; top: 50%; width: 80px; height: 1px; background: linear-gradient(90deg, transparent, rgba(77,171,247,0.6)); }
+.page-title::before { right: 100%; margin-right: 16px; background: linear-gradient(90deg, transparent, rgba(77,171,247,0.6)); }
+.page-title::after { left: 100%; margin-left: 16px; background: linear-gradient(270deg, transparent, rgba(77,171,247,0.6)); }
+
+/* ===== 时钟 ===== */
+.clock-panel { position: absolute; top: 20px; left: 24px; font-size: 14px; color: rgba(77,171,247,0.8); z-index: 10; font-family: 'Consolas', monospace; }
+.clock-panel .date { font-size: 12px; color: rgba(77,171,247,0.5); margin-bottom: 2px; }
+
+/* ===== 画布容器 ===== */
+.canvas-container { position: absolute; inset: 0; overflow: hidden; }
+.world { position: absolute; width: 3000px; height: 2000px; transform-origin: 0 0; }
+
+/* 网格背景 */
+.grid-bg { position: absolute; inset: 0; background-image:
+  linear-gradient(rgba(77,171,247,0.08) 1px, transparent 1px),
+  linear-gradient(90deg, rgba(77,171,247,0.08) 1px, transparent 1px),
+  linear-gradient(rgba(77,171,247,0.18) 1px, transparent 1px),
+  linear-gradient(90deg, rgba(77,171,247,0.18) 1px, transparent 1px);
+  background-size: 50px 50px, 50px 50px, 250px 250px, 250px 250px; }
+
+/* ===== SVG 连线层 ===== */
+#svgLayer { position: absolute; top: 0; left: 0; width: 3000px; height: 2000px; pointer-events: none; }
+.link-path { fill: none; stroke: rgba(77,171,247,0.45); stroke-width: 2; }
+.link-hit { fill: none; stroke: transparent; stroke-width: 16; pointer-events: stroke; cursor: pointer; }
+.flow-dot { fill: #4dabf7; filter: url(#glow); }
+
+/* ===== 节点 ===== */
+.node { position: absolute; transform: translate(-50%, -50%); min-width: 150px; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: box-shadow 0.3s, border-color 0.3s; z-index: 2; }
+.node:hover { z-index: 5; }
+
+.node-rect { background: rgba(10,14,30,0.92); border: 1.5px solid rgba(77,171,247,0.5); box-shadow: 0 0 12px rgba(77,171,247,0.15), inset 0 1px 0 rgba(255,255,255,0.04); }
+.node-rect:hover { border-color: rgba(77,171,247,0.9); box-shadow: 0 0 24px rgba(77,171,247,0.35), inset 0 1px 0 rgba(255,255,255,0.06); }
+
+.node-circle { width: 150px; height: 150px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0; }
+.node-circle-blue { background: radial-gradient(circle at 40% 35%, rgba(77,171,247,0.18), rgba(10,14,30,0.95)); border: 1.5px solid rgba(77,171,247,0.5); box-shadow: 0 0 18px rgba(77,171,247,0.2); }
+.node-circle-blue:hover { border-color: rgba(77,171,247,0.9); box-shadow: 0 0 30px rgba(77,171,247,0.4); }
+
+.node-name { font-size: 14px; font-weight: 600; color: #e0e6ed; margin-bottom: 8px; text-align: center; white-space: nowrap; }
+.node-metrics-inline { display: flex; flex-direction: column; gap: 3px; }
+.node-metric-row { display: flex; justify-content: space-between; font-size: 11px; line-height: 1.5; }
+.node-metric-label { color: rgba(224,230,237,0.55); }
+.node-metric-value { color: #4dabf7; font-family: 'Consolas', monospace; font-weight: 500; }
+.node-metric-value.simulated { color: #ffc107; }
+
+/* 节点类型配色 */
+.node-client { border-color: rgba(81,207,102,0.5); }
+.node-client:hover { border-color: rgba(81,207,102,0.9); box-shadow: 0 0 24px rgba(81,207,102,0.3); }
+.node-client .node-metric-value { color: #51cf66; }
+
+.node-nginx { border-color: rgba(255,107,107,0.5); }
+.node-nginx:hover { border-color: rgba(255,107,107,0.9); box-shadow: 0 0 24px rgba(255,107,107,0.3); }
+.node-nginx .node-metric-value { color: #ff6b6b; }
+
+.node-ppos { border-color: rgba(77,171,247,0.5); }
+.node-daoyue { border-color: rgba(190,142,255,0.5); }
+.node-daoyue:hover { border-color: rgba(190,142,255,0.9); box-shadow: 0 0 24px rgba(190,142,255,0.3); }
+.node-daoyue .node-metric-value { color: #be8eff; }
+
+/* ===== 悬浮提示 ===== */
+.tooltip { position: fixed; display: none; background: rgba(10,14,30,0.96); border: 1px solid rgba(77,171,247,0.4); border-radius: 6px; padding: 12px 16px; min-width: 220px; max-width: 320px; z-index: 100; pointer-events: none; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+.tooltip-title { font-size: 14px; font-weight: 600; color: #4dabf7; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(77,171,247,0.2); }
+.tooltip-row { display: flex; justify-content: space-between; font-size: 12px; line-height: 1.8; }
+.tooltip-label { color: rgba(224,230,237,0.6); }
+.tooltip-value { color: #4dabf7; font-family: 'Consolas', monospace; }
+.tooltip-value.simulated { color: #ffc107; }
+
+/* ===== 右滑详情面板 ===== */
+.detail-panel { position: absolute; top: 0; right: -420px; width: 420px; height: 100vh; background: rgba(10,14,30,0.97); border-left: 1px solid rgba(77,171,247,0.3); z-index: 50; transition: right 0.35s ease; display: flex; flex-direction: column; box-shadow: -4px 0 20px rgba(0,0,0,0.4); }
+.detail-panel-open { right: 0; }
+.detail-header { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; border-bottom: 1px solid rgba(77,171,247,0.15); }
+.detail-title { font-size: 16px; font-weight: 600; color: #4dabf7; }
+.detail-close { font-size: 22px; cursor: pointer; color: rgba(224,230,237,0.5); transition: color 0.2s; }
+.detail-close:hover { color: #ff6b6b; }
+.detail-toolbar { padding: 10px 20px; display: flex; gap: 8px; border-bottom: 1px solid rgba(77,171,247,0.1); }
+.time-btn { padding: 4px 14px; font-size: 12px; border-radius: 4px; cursor: pointer; color: rgba(224,230,237,0.6); background: rgba(77,171,247,0.08); border: 1px solid rgba(77,171,247,0.2); transition: all 0.2s; }
+.time-btn.active { color: #4dabf7; border-color: #4dabf7; background: rgba(77,171,247,0.18); }
+.detail-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
+.detail-chart-title { font-size: 13px; color: rgba(224,230,237,0.7); margin: 16px 0 8px; }
+.detail-chart { width: 100%; height: 140px; background: rgba(77,171,247,0.04); border-radius: 6px; border: 1px solid rgba(77,171,247,0.1); position: relative; overflow: hidden; }
+.detail-text-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.detail-text-item { background: rgba(77,171,247,0.06); border-radius: 6px; padding: 10px 12px; border: 1px solid rgba(77,171,247,0.1); }
+.detail-text-name { font-size: 11px; color: rgba(224,230,237,0.5); margin-bottom: 4px; }
+.detail-text-value { font-size: 15px; color: #4dabf7; font-family: 'Consolas', monospace; font-weight: 600; }
+
+/* ===== 告警面板 ===== */
+.alert-float-toggle { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; background: rgba(10,14,30,0.9); border: 1.5px solid rgba(77,171,247,0.4); display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 60; transition: all 0.3s; }
+.alert-float-toggle:hover { border-color: #4dabf7; box-shadow: 0 0 16px rgba(77,171,247,0.3); }
+.alert-float-icon { font-size: 20px; }
+.alert-float-count { position: absolute; top: -4px; right: -4px; background: #ff3c3c; color: #fff; font-size: 10px; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.alert-float-panel { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; z-index: 55; }
+.alert-float-open { width: 420px; height: 520px; transform: translateY(-50%); }
+.alert-float-body { display: none; flex-direction: column; height: 100%; background: rgba(10,14,30,0.97); border: 1px solid rgba(77,171,247,0.3); border-radius: 10px; box-shadow: 0 4px 30px rgba(0,0,0,0.5); overflow: hidden; }
+.alert-float-open .alert-float-body { display: flex; }
+.alert-float-open .alert-float-toggle { display: none; }
+.alert-float-title { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid rgba(77,171,247,0.15); font-size: 15px; font-weight: 600; color: #4dabf7; }
+.alert-float-close { cursor: pointer; color: rgba(224,230,237,0.5); font-size: 18px; }
+.alert-float-close:hover { color: #ff6b6b; }
+.alert-float-tabs { display: flex; border-bottom: 1px solid rgba(77,171,247,0.1); }
+.alert-tab { flex: 1; text-align: center; padding: 10px; font-size: 13px; cursor: pointer; color: rgba(224,230,237,0.5); transition: all 0.2s; }
+.alert-tab.tab-active { color: #4dabf7; border-bottom: 2px solid #4dabf7; }
+.alert-float-list { flex: 1; overflow-y: auto; padding: 10px; }
+.alert-float-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: rgba(224,230,237,0.4); gap: 10px; }
+.alert-float-ok-icon { font-size: 36px; color: #51cf66; }
+.alert-float-empty-time { font-family: 'Consolas', monospace; font-size: 13px; color: rgba(77,171,247,0.5); }
+.alert-float-item { background: rgba(77,171,247,0.05); border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; border-left: 3px solid; cursor: pointer; }
+.alert-float-warning { border-left-color: #ffc107; }
+.alert-float-critical { border-left-color: #ff3c3c; }
+.alert-float-item-main { }
+.alert-float-item-left { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.alert-float-level-tag { font-size: 10px; padding: 1px 6px; border-radius: 3px; font-weight: 600; }
+.tag-warning { background: rgba(255,193,7,0.15); color: #ffc107; }
+.tag-critical { background: rgba(255,60,60,0.15); color: #ff3c3c; }
+.alert-float-target { font-size: 13px; font-weight: 500; }
+.alert-float-item-detail { font-size: 11px; color: rgba(224,230,237,0.5); }
+.alert-float-metric { }
+.alert-float-value { color: #4dabf7; margin-left: 8px; font-family: 'Consolas', monospace; }
+.alert-float-item-time { font-size: 10px; color: rgba(224,230,237,0.3); margin-top: 4px; }
+.alert-float-scope { font-size: 10px; padding: 1px 6px; border-radius: 3px; white-space: nowrap; border: 1px solid transparent; }
+.scope-instance { color: #7cc4ff; background: rgba(77,171,247,0.12); border-color: rgba(77,171,247,0.35); font-family: 'Consolas', monospace; }
+.scope-aggregate { color: rgba(224,230,237,0.55); background: rgba(224,230,237,0.08); border-color: rgba(224,230,237,0.18); }
+.scope-link { color: #8ce99a; background: rgba(81,207,102,0.12); border-color: rgba(81,207,102,0.3); }
+.alert-float-item-resolved { opacity: 0.72; }
+.alert-float-status { font-size: 10px; padding: 1px 6px; border-radius: 3px; background: rgba(81,207,102,0.12); color: #51cf66; margin-left: 6px; }
+
+/* ===== 底部状态栏 ===== */
+.status-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 36px; background: rgba(10,14,30,0.9); border-top: 1px solid rgba(77,171,247,0.15); display: flex; align-items: center; justify-content: center; gap: 40px; z-index: 10; font-size: 12px; color: rgba(224,230,237,0.5); }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.status-dot.green { background: #51cf66; box-shadow: 0 0 6px rgba(81,207,102,0.5); }
+.status-dot.yellow { background: #ffc107; box-shadow: 0 0 6px rgba(255,193,7,0.5); }
+.status-item { display: flex; align-items: center; }
+
+/* ===== 坐标面板 ===== */
+.coord-panel { position: absolute; bottom: 44px; left: 24px; font-size: 11px; color: rgba(77,171,247,0.4); font-family: 'Consolas', monospace; z-index: 10; }
+
+/* ===== 图例 ===== */
+.legend-panel { position: absolute; bottom: 50px; right: 24px; display: flex; gap: 16px; z-index: 10; font-size: 11px; color: rgba(224,230,237,0.5); }
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-color { width: 12px; height: 12px; border-radius: 3px; }
+
+/* ===== 详情面板-查看实例按钮 ===== */
+.instance-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 12px; border-radius: 4px; cursor: pointer; color: #4dabf7; background: rgba(77,171,247,0.1); border: 1px solid rgba(77,171,247,0.3); transition: all 0.2s; margin-left: auto; }
+.instance-btn:hover { background: rgba(77,171,247,0.2); border-color: #4dabf7; box-shadow: 0 0 10px rgba(77,171,247,0.2); }
+.instance-btn svg { width: 14px; height: 14px; }
+
+/* ===== 实例页面 ===== */
+.instance-page { position: fixed; inset: 0; background: #0a0e1a; z-index: 200; display: none; flex-direction: column; }
+.instance-page.visible { display: flex; }
+.instance-header { display: flex; align-items: center; padding: 16px 24px; border-bottom: 1px solid rgba(77,171,247,0.15); gap: 16px; }
+.instance-back { display: flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 13px; border-radius: 4px; cursor: pointer; color: rgba(224,230,237,0.7); background: rgba(77,171,247,0.08); border: 1px solid rgba(77,171,247,0.2); transition: all 0.2s; }
+.instance-back:hover { color: #4dabf7; border-color: #4dabf7; }
+.instance-header-title { font-size: 18px; font-weight: 600; color: #4dabf7; }
+.instance-body { flex: 1; display: flex; overflow: hidden; }
+.instance-sidebar { width: 280px; border-right: 1px solid rgba(77,171,247,0.12); padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.instance-main { flex: 1; padding: 24px; overflow-y: auto; }
+
+/* 下拉框 */
+.instance-select-group label { display: block; font-size: 12px; color: rgba(224,230,237,0.5); margin-bottom: 6px; }
+.instance-select { width: 100%; padding: 8px 12px; font-size: 13px; border-radius: 4px; background: rgba(10,14,30,0.9); border: 1px solid rgba(77,171,247,0.3); color: #e0e6ed; outline: none; cursor: pointer; appearance: auto; }
+.instance-select:focus { border-color: #4dabf7; box-shadow: 0 0 8px rgba(77,171,247,0.2); }
+.instance-select option { background: #0a0e1a; color: #e0e6ed; }
+
+/* 实例列表 */
+.instance-list { display: flex; flex-direction: column; gap: 6px; }
+.instance-list-item { padding: 10px 12px; border-radius: 6px; cursor: pointer; border: 1px solid rgba(77,171,247,0.1); transition: all 0.2s; display: flex; align-items: center; gap: 10px; }
+.instance-list-item:hover { border-color: rgba(77,171,247,0.4); background: rgba(77,171,247,0.06); }
+.instance-list-item.active { border-color: #4dabf7; background: rgba(77,171,247,0.1); }
+.instance-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.instance-status-dot.running { background: #51cf66; box-shadow: 0 0 6px rgba(81,207,102,0.5); }
+.instance-status-dot.stopped { background: #ff6b6b; box-shadow: 0 0 6px rgba(255,107,107,0.5); }
+.instance-list-name { font-size: 13px; flex: 1; }
+.instance-list-ip { font-size: 11px; color: rgba(224,230,237,0.4); font-family: 'Consolas', monospace; }
+
+/* 实例告警（告警记录携带 SERVER_IP 时在实例侧展示） */
+.instance-list-alert { margin-left: 4px; font-size: 10px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: rgba(255,60,60,0.18); color: #ff6b6b; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.instance-alert-banner { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+.instance-alert-line { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 8px 12px; border-radius: 6px; border-left: 3px solid; }
+.instance-alert-line.critical { background: rgba(255,60,60,0.08); border-left-color: #ff3c3c; color: #ff9b9b; }
+.instance-alert-line.warning { background: rgba(255,193,7,0.08); border-left-color: #ffc107; color: #ffd75e; }
+.instance-alert-line .ial-metric { color: rgba(224,230,237,0.78); }
+.instance-alert-line .ial-value { font-family: 'Consolas', monospace; font-weight: 600; }
+.instance-alert-line .ial-time { margin-left: auto; font-size: 10px; color: rgba(224,230,237,0.35); }
+
+/* 同机多应用共享提示（Tomcat 指标为机器维度） */
+.instance-shared-tip { margin-bottom: 14px; padding: 8px 12px; border-radius: 6px; font-size: 12px; line-height: 1.6; color: #ffd43b; background: rgba(255,212,59,0.08); border: 1px solid rgba(255,212,59,0.3); }
+
+/* 实例详情卡片 */
+.instance-detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.instance-detail-name { font-size: 20px; font-weight: 600; color: #e0e6ed; }
+.instance-detail-status { font-size: 12px; padding: 3px 10px; border-radius: 10px; }
+.instance-detail-status.running { background: rgba(81,207,102,0.15); color: #51cf66; }
+.instance-detail-status.stopped { background: rgba(255,107,107,0.15); color: #ff6b6b; }
+
+.instance-metric-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.instance-metric-card { background: rgba(77,171,247,0.04); border: 1px solid rgba(77,171,247,0.1); border-radius: 8px; padding: 14px 16px; }
+.instance-metric-card .imc-label { font-size: 11px; color: rgba(224,230,237,0.5); margin-bottom: 6px; }
+.instance-metric-card .imc-value { font-size: 22px; font-weight: 700; font-family: 'Consolas', monospace; color: #4dabf7; }
+.instance-metric-card .imc-value.warn { color: #ffc107; }
+.instance-metric-card .imc-value.danger { color: #ff6b6b; }
+.instance-metric-card .imc-unit { font-size: 11px; color: rgba(224,230,237,0.4); margin-left: 4px; font-weight: 400; }
+
+.instance-chart-section { margin-top: 8px; }
+.instance-chart-title { font-size: 14px; color: rgba(224,230,237,0.7); margin-bottom: 10px; }
+.instance-chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.instance-chart-box { background: rgba(77,171,247,0.04); border: 1px solid rgba(77,171,247,0.1); border-radius: 8px; padding: 12px; height: 180px; position: relative; }
+.instance-chart-box canvas { width: 100%; height: 100%; }
+
+/* ===== 动画 ===== */
+@keyframes pulse-glow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+@keyframes flow { 0% { stroke-dashoffset: 20; } 100% { stroke-dashoffset: 0; } }
+.link-path { stroke-dasharray: 0; animation: pulse-glow 3s ease-in-out infinite; }
+
+/* 滚动条 */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(77,171,247,0.3); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="topology-page">
+  <!-- 标题 -->
+  <div class="page-title">基础设施监控大屏</div>
+
+  <!-- 时钟 -->
+  <div class="clock-panel">
+    <div class="date" id="dateDisplay"></div>
+    <div id="timeDisplay"></div>
+  </div>
+
+  <!-- 画布 -->
+  <div class="canvas-container" id="canvasContainer">
+    <div class="world" id="world">
+      <div class="grid-bg"></div>
+
+      <!-- SVG 连线 -->
+      <svg id="svgLayer">
+        <defs>
+          <filter id="glow"><feGaussianBlur stdDeviation="3" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="rgba(77,171,247,0.6)"/></marker>
+        </defs>
+      </svg>
+
+      <!-- 节点容器 -->
+      <div id="nodesContainer"></div>
+    </div>
+  </div>
+
+  <!-- 悬浮提示 -->
+  <div class="tooltip" id="tooltip">
+    <div class="tooltip-title" id="tooltipTitle"></div>
+    <div id="tooltipContent"></div>
+  </div>
+
+  <!-- 详情面板 -->
+  <div class="detail-panel" id="detailPanel">
+    <div class="detail-header">
+      <div class="detail-title" id="detailTitle">节点详情</div>
+      <div class="detail-close" onclick="closeDetail()">&times;</div>
+    </div>
+    <div class="detail-toolbar">
+      <span class="time-btn active">近1小时</span>
+      <span class="time-btn">近24小时</span>
+      <span class="instance-btn" id="instanceBtn" onclick="openInstancePage()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        查看具体实例
+      </span>
+    </div>
+    <div class="detail-body" id="detailBody"></div>
+  </div>
+
+  <!-- 告警按钮 -->
+  <div class="alert-float-panel" id="alertPanel">
+    <div class="alert-float-toggle" onclick="toggleAlert()">
+      <span class="alert-float-icon">⚠</span>
+      <span class="alert-float-count" id="alertBadge">0</span>
+    </div>
+    <div class="alert-float-body">
+      <div class="alert-float-title">
+        <span>⚠ 告警监控</span>
+        <span class="alert-float-close" onclick="toggleAlert()">✕</span>
+      </div>
+      <div class="alert-float-tabs">
+        <span class="alert-tab tab-active" data-tab="active" onclick="switchAlertTab('active')">活跃告警 (<span id="activeAlertCount">0</span>)</span>
+        <span class="alert-tab" data-tab="history" onclick="switchAlertTab('history')">历史记录</span>
+      </div>
+      <div class="alert-float-list" id="alertList"></div>
+    </div>
+  </div>
+
+  <!-- 坐标 -->
+  <div class="coord-panel">X: 1500 | Y: 1000</div>
+
+  <!-- 图例 -->
+  <div class="legend-panel">
+    <div class="legend-item"><div class="legend-color" style="background:#51cf66;"></div>客户端</div>
+    <div class="legend-item"><div class="legend-color" style="background:#ff6b6b;"></div>Nginx 集群</div>
+    <div class="legend-item"><div class="legend-color" style="background:#4dabf7;"></div>后端应用</div>
+    <div class="legend-item"><span style="color:#ffc107;">●</span> 模拟数据</div>
+  </div>
+
+  <!-- 底部状态栏 -->
+  <div class="status-bar">
+    <div class="status-item"><span class="status-dot green"></span>系统运行正常</div>
+    <div class="status-item">节点: 14 | 链路: 13</div>
+    <div class="status-item">采集周期: 120s</div>
+    <div class="status-item" id="lastCollect">最近采集: --</div>
+  </div>
+
+  <!-- ===== 实例页面 ===== -->
+  <div class="instance-page" id="instancePage">
+    <div class="instance-header">
+      <div class="instance-back" onclick="closeInstancePage()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        返回拓扑图
+      </div>
+      <div class="instance-header-title" id="instancePageTitle">节点实例</div>
+    </div>
+    <div class="instance-body">
+      <!-- 左侧：选择器 -->
+      <div class="instance-sidebar">
+        <div class="instance-select-group">
+          <label>选择节点</label>
+          <select class="instance-select" id="instanceNodeSelect" onchange="onInstanceNodeChange()"></select>
+        </div>
+        <div class="instance-select-group">
+          <label>选择实例</label>
+          <select class="instance-select" id="instanceSelect" onchange="onInstanceChange()"></select>
+        </div>
+        <div class="instance-select-group">
+          <label>实例列表</label>
+          <div class="instance-list" id="instanceList"></div>
+        </div>
+      </div>
+      <!-- 右侧：实例详情 -->
+      <div class="instance-main" id="instanceMain"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== 节点数据（终态拓扑：14 节点） =====
+// 客户端 / nginx × 3 为真实采集（按集群 SERVER_IP 过滤）；
+// 后端应用节点指标来自 Tomcat 访问日志（机器级，同机多应用无法区分，指标同时归属各节点）
+const nodes = [
+  { id: 'client', name: '客户端', type: 'circle', style: 'client', x: 450, y: 620,
+    metrics: [
+      { label: '总IP数', value: '3,842', real: true },
+      { label: 'IP活跃数', value: '1,267', real: true },
+      { label: 'TOP访问IP', value: '223.73.89.61(528次)', real: true },
+      { label: '并发连接数', value: '42.50', real: true },
+      { label: '终端分布', value: 'Windows 65.2% | Android 18.4% | iOS 12.1%', real: true },
+      { label: 'UA类型', value: 'Chrome 48.6% | Edge 32.1% | Safari 11.3%', real: true }
+    ]},
+  { id: 'nginx_dh30', name: 'nginx(道合 3.0)', type: 'rect', style: 'nginx', x: 850, y: 320,
+    metrics: [
+      { label: '每秒请求数(QPS)', value: '356.20', real: true },
+      { label: '请求错误率', value: '0.12%', real: true },
+      { label: '平均响应时间', value: '23.50ms', real: true },
+      { label: 'Nginx进程存活', value: '1', real: true },
+      { label: '5xx错误率', value: '0.02%', real: true },
+      { label: '4xx错误率', value: '0.10%', real: true },
+      { label: 'P95请求耗时', value: '86.40ms', real: true },
+      { label: '上游响应耗时', value: '18.20ms', real: true },
+      { label: '上游状态码分布', value: '200(99.2%) | 502(0.3%) | 503(0.0%) | 504(0.5%)', real: true }
+    ]},
+  { id: 'nginx_dh10', name: 'nginx(道合 1.0)', type: 'rect', style: 'nginx', x: 850, y: 620,
+    metrics: [
+      { label: '每秒请求数(QPS)', value: '128.40', real: true },
+      { label: '请求错误率', value: '0.08%', real: true },
+      { label: '平均响应时间', value: '19.80ms', real: true },
+      { label: 'Nginx进程存活', value: '1', real: true },
+      { label: '5xx错误率', value: '0.00%', real: true },
+      { label: '4xx错误率', value: '0.08%', real: true },
+      { label: 'P95请求耗时', value: '64.20ms', real: true },
+      { label: '上游响应耗时', value: '15.60ms', real: true },
+      { label: '上游状态码分布', value: '200(99.6%) | 502(0.4%) | 503(0.0%) | 504(0.0%)', real: true }
+    ]},
+  { id: 'nginx_dy30', name: 'nginx(道悦 3.0)', type: 'rect', style: 'nginx', x: 850, y: 920,
+    metrics: [
+      { label: '每秒请求数(QPS)', value: '242.80', real: true },
+      { label: '请求错误率', value: '0.35%', real: true },
+      { label: '平均响应时间', value: '27.60ms', real: true },
+      { label: 'Nginx进程存活', value: '1', real: true },
+      { label: '5xx错误率', value: '0.15%', real: true },
+      { label: '4xx错误率', value: '0.20%', real: true },
+      { label: 'P95请求耗时', value: '112.30ms', real: true },
+      { label: '上游响应耗时', value: '22.40ms', real: true },
+      { label: '上游状态码分布', value: '200(98.4%) | 502(0.8%) | 503(0.2%) | 504(0.6%)', real: true }
+    ]},
+  { id: 'sse', name: 'SSE运维控制台', type: 'rect', style: 'app', x: 1450, y: 80,
+    metrics: [
+      { label: 'Tomcat QPS', value: '18.60', real: false },
+      { label: '请求失败率', value: '0.05%', real: false },
+      { label: '5xx错误率', value: '0.01%', real: false },
+      { label: '请求错误率', value: '0.05%', real: false },
+      { label: '实例 IP', value: '192.168.49.162 / .163', real: false },
+      { label: '指标口径', value: '机器级指标（独占机器）', real: false }
+    ]},
+  { id: 'hsiar_ob', name: 'HSIAR_OB', type: 'rect', style: 'app', x: 1450, y: 205,
+    shared: '与 HSIAR(mgrapi) 同机部署，实例指标为机器级共享数据，无法归属到单个应用',
+    metrics: [
+      { label: 'Tomcat QPS', value: '56.20', real: false },
+      { label: '请求失败率', value: '0.12%', real: false },
+      { label: '5xx错误率', value: '0.02%', real: false },
+      { label: '请求错误率', value: '0.12%', real: false },
+      { label: '实例 IP', value: '192.168.49.167 / .172', real: false },
+      { label: '指标口径', value: '与 HSIAR(mgrapi) 同机 · 机器级共享', real: false }
+    ]},
+  { id: 'operator', name: '操作员中心', type: 'rect', style: 'app', x: 1450, y: 330,
+    metrics: [
+      { label: 'Tomcat QPS', value: '32.10', real: false },
+      { label: '请求失败率', value: '0.08%', real: false },
+      { label: '5xx错误率', value: '0.01%', real: false },
+      { label: '请求错误率', value: '0.08%', real: false },
+      { label: '实例 IP', value: '192.168.49.218', real: false },
+      { label: '指标口径', value: '机器级指标（独占机器）', real: false }
+    ]},
+  { id: 'wechat', name: '微信小程序', type: 'rect', style: 'app', x: 1450, y: 455,
+    metrics: [
+      { label: 'Tomcat QPS', value: '88.40', real: false },
+      { label: '请求失败率', value: '0.24%', real: false },
+      { label: '5xx错误率', value: '0.03%', real: false },
+      { label: '请求错误率', value: '0.24%', real: false },
+      { label: '实例 IP', value: '192.168.49.66', real: false },
+      { label: '指标口径', value: '机器级指标（独占机器）', real: false }
+    ]},
+  { id: 'mgrapi', name: 'HSIAR(mgrapi)', type: 'rect', style: 'app', x: 1450, y: 580,
+    shared: '与 HSIAR_OB 同机部署，实例指标为机器级共享数据，无法归属到单个应用',
+    metrics: [
+      { label: 'Tomcat QPS', value: '64.80', real: false },
+      { label: '请求失败率', value: '0.19%', real: false },
+      { label: '5xx错误率', value: '0.02%', real: false },
+      { label: '请求错误率', value: '0.19%', real: false },
+      { label: '实例 IP', value: '192.168.49.167 / .172', real: false },
+      { label: '指标口径', value: '与 HSIAR_OB 同机 · 机器级共享', real: false }
+    ]},
+  { id: 'hsiar_dh30', name: 'HSIAR-道合 3.0', type: 'rect', style: 'app', x: 1450, y: 705,
+    shared: '与 HSIAR-道悦 3.0、HSIAR-QUDAO 同机部署，实例指标为机器级共享数据，无法归属到单个应用',
+    metrics: [
+      { label: 'Tomcat QPS', value: '142.60', real: false },
+      { label: '请求失败率', value: '0.10%', real: false },
+      { label: '5xx错误率', value: '0.01%', real: false },
+      { label: '请求错误率', value: '0.10%', real: false },
+      { label: '实例 IP', value: '192.168.49.112 / .113', real: false },
+      { label: '指标口径', value: '与 HSIAR-道悦3.0、QUDAO 同机 · 机器级共享', real: false }
+    ]},
+  { id: 'dh10_main', name: '道合 1.0 主站', type: 'rect', style: 'app', x: 1450, y: 830,
+    shared: '与道悦 1.0 主站同机部署，实例指标为机器级共享数据，无法归属到单个应用',
+    metrics: [
+      { label: 'Tomcat QPS', value: '76.30', real: false },
+      { label: '请求失败率', value: '0.06%', real: false },
+      { label: '5xx错误率', value: '0.01%', real: false },
+      { label: '请求错误率', value: '0.06%', real: false },
+      { label: '实例 IP', value: '192.168.49.23 / .24', real: false },
+      { label: '指标口径', value: '与道悦 1.0 主站同机 · 机器级共享', real: false }
+    ]},
+  { id: 'hsiar_dy30', name: 'HSIAR-道悦 3.0', type: 'rect', style: 'app', x: 1450, y: 955,
+    shared: '与 HSIAR-道合 3.0、HSIAR-QUDAO 同机部署，实例指标为机器级共享数据，无法归属到单个应用',
+    metrics: [
+      { label: 'Tomcat QPS', value: '98.20', real: false },
+      { label: '请求失败率', value: '0.15%', real: false },
+      { label: '5xx错误率', value: '0.02%', real: false },
+      { label: '请求错误率', value: '0.15%', real: false },
+      { label: '实例 IP', value: '192.168.49.112 / .113', real: false },
+      { label: '指标口径', value: '与 HSIAR-道合3.0、QUDAO 同机 · 机器级共享', real: false }
+    ]},
+  { id: 'dy10_main', name: '道悦 1.0 主站', type: 'rect', style: 'app', x: 1450, y: 1080,
+    shared: '与道合 1.0 主站同机部署，实例指标为机器级共享数据，无法归属到单个应用',
+    metrics: [
+      { label: 'Tomcat QPS', value: '54.70', real: false },
+      { label: '请求失败率', value: '0.11%', real: false },
+      { label: '5xx错误率', value: '0.01%', real: false },
+      { label: '请求错误率', value: '0.11%', real: false },
+      { label: '实例 IP', value: '192.168.49.23 / .24', real: false },
+      { label: '指标口径', value: '与道合 1.0 主站同机 · 机器级共享', real: false }
+    ]},
+  { id: 'qudao', name: 'HSIAR-QUDAO', type: 'rect', style: 'app', x: 1450, y: 1205,
+    shared: '与 HSIAR-道合 3.0、HSIAR-道悦 3.0 同机部署，实例指标为机器级共享数据，无法归属到单个应用',
+    metrics: [
+      { label: 'Tomcat QPS', value: '36.50', real: false },
+      { label: '请求失败率', value: '0.17%', real: false },
+      { label: '5xx错误率', value: '0.02%', real: false },
+      { label: '请求错误率', value: '0.17%', real: false },
+      { label: '实例 IP', value: '192.168.49.112 / .113', real: false },
+      { label: '指标口径', value: '与 HSIAR-道合3.0、道悦3.0 同机 · 机器级共享', real: false }
+    ]}
+];
+
+// ===== 链路数据（终态拓扑：13 条） =====
+// 客户端→nginx：真实采集（按集群 IP 过滤）；nginx→后端：服务级链路指标待路径映射接入，当前为演示占位
+const links = [
+  { source: 'client', target: 'nginx_dh30', label: '客户端→nginx(道合 3.0)', metrics: [
+    { label: 'TOP请求路径', value: '/daoyue/g/ppsout-service/v/getSysParameter', real: true },
+    { label: '请求总数', value: '1,282,320', real: true },
+    { label: '请求失败次数', value: '1,539', real: true },
+    { label: '请求平均耗时', value: '23.50ms', real: true },
+    { label: '请求成功率', value: '99.88%', real: true }
+  ]},
+  { source: 'client', target: 'nginx_dh10', label: '客户端→nginx(道合 1.0)', metrics: [
+    { label: 'TOP请求路径', value: '/daoyue1/main/index.html', real: true },
+    { label: '请求总数', value: '462,240', real: true },
+    { label: '请求失败次数', value: '370', real: true },
+    { label: '请求平均耗时', value: '19.80ms', real: true },
+    { label: '请求成功率', value: '99.92%', real: true }
+  ]},
+  { source: 'client', target: 'nginx_dy30', label: '客户端→nginx(道悦 3.0)', metrics: [
+    { label: 'TOP请求路径', value: '/daoyue-layout/directsale/', real: true },
+    { label: '请求总数', value: '874,080', real: true },
+    { label: '请求失败次数', value: '3,059', real: true },
+    { label: '请求平均耗时', value: '27.60ms', real: true },
+    { label: '请求成功率', value: '99.65%', real: true }
+  ]},
+  { source: 'nginx_dh30', target: 'sse', label: 'nginx(道合 3.0)→SSE运维控制台', metrics: [
+    { label: '转发QPS', value: '18.60', real: false },
+    { label: '请求成功率', value: '99.95%', real: false },
+    { label: '平均耗时', value: '15.20ms', real: false },
+    { label: '超时次数', value: '0', real: false },
+    { label: '上游健康状态', value: '健康', real: false }
+  ]},
+  { source: 'nginx_dh30', target: 'hsiar_ob', label: 'nginx(道合 3.0)→HSIAR_OB', metrics: [
+    { label: '转发QPS', value: '56.20', real: false },
+    { label: '请求成功率', value: '99.88%', real: false },
+    { label: '平均耗时', value: '21.40ms', real: false },
+    { label: '超时次数', value: '1', real: false },
+    { label: '上游健康状态', value: '健康', real: false }
+  ]},
+  { source: 'nginx_dh30', target: 'operator', label: 'nginx(道合 3.0)→操作员中心', metrics: [
+    { label: '转发QPS', value: '32.10', real: false },
+    { label: '请求成功率', value: '99.92%', real: false },
+    { label: '平均耗时', value: '18.70ms', real: false },
+    { label: '超时次数', value: '0', real: false },
+    { label: '上游健康状态', value: '健康', real: false }
+  ]},
+  { source: 'nginx_dh30', target: 'wechat', label: 'nginx(道合 3.0)→微信小程序', metrics: [
+    { label: '转发QPS', value: '88.40', real: false },
+    { label: '请求成功率', value: '99.76%', real: false },
+    { label: '平均耗时', value: '26.30ms', real: false },
+    { label: '超时次数', value: '2', real: false },
+    { label: '上游健康状态', value: '健康', real: false }
+  ]},
+  { source: 'nginx_dh30', target: 'mgrapi', label: 'nginx(道合 3.0)→HSIAR(mgrapi)', metrics: [
+    { label: '转发QPS', value: '64.80', real: false },
+    { label: '请求成功率', value: '99.81%', real: false },
+    { label: '平均耗时', value: '23.90ms', real: false },
+    { label: '超时次数', value: '1', real: false },
+    { label: '上游健康状态', value: '健康', real: false }
+  ]},
+  { source: 'nginx_dh30', target: 'hsiar_dh30', label: 'nginx(道合 3.0)→HSIAR-道合 3.0', metrics: [
+    { label: '转发QPS', value: '142.60', real: false },
+    { label: '请求成功率', value: '99.90%', real: false },
+    { label: '平均耗时', value: '17.80ms', real: false },
+    { label: '超时次数', value: '0', real: false },
+    { label: '上游健康状态', value: '健康', real: false }
+  ]},
+  { source: 'nginx_dh10', target: 'dh10_main', label: 'nginx(道合 1.0)→道合 1.0 主站', metrics: [
+    { label: '转发QPS', value: '76.30', real: false },
+    { label: '请求成功率', value: '99.94%', real: false },
+    { label: '平均耗时', value: '14.50ms', real: false },
+    { label: '超时次数', value: '0', real: false },
+    { label: '上游健康状态', value: '健康', real: false }
+  ]},
+  { source: 'nginx_dy30', target: 'hsiar_dy30', label: 'nginx(道悦 3.0)→HSIAR-道悦 3.0', metrics: [
+    { label: '转发QPS', value: '98.20', real: false },
+    { label: '请求成功率', value: '99.85%', real: false },
+    { label: '平均耗时', value: '20.10ms', real: false },
+    { label: '超时次数', value: '1', real: false },
+    { label: '上游健康状态', value: '健康', real: false }
+  ]},
+  { source: 'nginx_dy30', target: 'dy10_main', label: 'nginx(道悦 3.0)→道悦 1.0 主站', metrics: [
+    { label: '转发QPS', value: '54.70', real: false },
+    { label: '请求成功率', value: '99.89%', real: false },
+    { label: '平均耗时', value: '16.40ms', real: false },
+    { label: '超时次数', value: '0', real: false },
+    { label: '上游健康状态', value: '健康', real: false }
+  ]},
+  { source: 'nginx_dy30', target: 'qudao', label: 'nginx(道悦 3.0)→HSIAR-QUDAO', metrics: [
+    { label: '转发QPS', value: '36.50', real: false },
+    { label: '请求成功率', value: '99.83%', real: false },
+    { label: '平均耗时', value: '19.60ms', real: false },
+    { label: '超时次数', value: '2', real: false },
+    { label: '上游健康状态', value: '健康', real: false }
+  ]}
+];
+
+// ===== 渲染节点 =====
+const container = document.getElementById('nodesContainer');
+const nodeStyleMap = {
+  client: { border: 'rgba(81,207,102,0.5)', color: '#51cf66', shadow: 'rgba(81,207,102,0.2)' },
+  nginx: { border: 'rgba(255,107,107,0.5)', color: '#ff6b6b', shadow: 'rgba(255,107,107,0.2)' },
+  app: { border: 'rgba(77,171,247,0.5)', color: '#4dabf7', shadow: 'rgba(77,171,247,0.2)' }
+};
+
+nodes.forEach(n => {
+  const el = document.createElement('div');
+  const sc = nodeStyleMap[n.style] || nodeStyleMap.app;
+  const isCircle = n.type === 'circle';
+  el.className = 'node ' + (isCircle ? 'node-circle node-circle-blue' : 'node-rect');
+  el.id = 'node-' + n.id;
+  el.style.left = n.x + 'px';
+  el.style.top = n.y + 'px';
+  if (!isCircle) {
+    el.style.borderColor = sc.border;
+  }
+  el.style.boxShadow = '0 0 12px ' + sc.shadow;
+
+  const showMetrics = n.metrics.slice(0, 3);
+  let metricsHtml = showMetrics.map(m => {
+    const valClass = m.real ? '' : ' simulated';
+    return '<div class="node-metric-row"><span class="node-metric-label">' + m.label + '</span><span class="node-metric-value' + valClass + '">' + m.value + '</span></div>';
+  }).join('');
+
+  el.innerHTML = '<div class="node-name">' + n.name + '</div><div class="node-metrics-inline">' + metricsHtml + '</div>';
+
+  el.addEventListener('mouseenter', e => showTooltip(e, n));
+  el.addEventListener('mouseleave', hideTooltip);
+  el.addEventListener('click', () => openDetail(n));
+  container.appendChild(el);
+});
+
+// ===== 渲染连线 =====
+const svg = document.getElementById('svgLayer');
+function getNodeCenter(n) { return { x: n.x, y: n.y }; }
+function calcEdge(src, tgt) {
+  const dx = tgt.x - src.x, dy = tgt.y - src.y;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  if (dist < 1) return { sx: src.x, sy: src.y, ex: tgt.x, ey: tgt.y };
+  const nx = dx/dist, ny = dy/dist;
+  const r = 75;
+  return { sx: src.x + nx*r, sy: src.y + ny*r, ex: tgt.x - nx*r, ey: tgt.y - ny*r };
+}
+
+links.forEach((link, idx) => {
+  const src = nodes.find(n => n.id === link.source);
+  const tgt = nodes.find(n => n.id === link.target);
+  if (!src || !tgt) return;
+  const edge = calcEdge(getNodeCenter(src), getNodeCenter(tgt));
+  const mx = (edge.sx + edge.ex) / 2, my = (edge.sy + edge.ey) / 2;
+  const d = 'M ' + Math.round(edge.sx) + ' ' + Math.round(edge.sy) + ' Q ' + Math.round(mx) + ' ' + Math.round(my) + ' ' + Math.round(edge.ex) + ' ' + Math.round(edge.ey);
+
+  // 可见路径
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', d);
+  path.setAttribute('class', 'link-path');
+  path.setAttribute('marker-end', 'url(#arrow)');
+  path.id = 'path' + idx + 'v';
+  svg.appendChild(path);
+
+  // 热区路径
+  const hit = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  hit.setAttribute('d', d);
+  hit.setAttribute('class', 'link-hit');
+  hit.style.pointerEvents = 'stroke';
+  hit.addEventListener('mouseenter', e => showLinkTooltip(e, link));
+  hit.addEventListener('mouseleave', hideTooltip);
+  svg.appendChild(hit);
+
+  // 流动粒子
+  for (let p = 0; p < 2; p++) {
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('r', p === 0 ? '3' : '2.5');
+    circle.setAttribute('class', 'flow-dot');
+    if (p === 1) circle.setAttribute('opacity', '0.6');
+    const anim = document.createElementNS('http://www.w3.org/2000/svg', 'animateMotion');
+    anim.setAttribute('dur', (2 + (idx % 3) * 0.5 + p * 1) + 's');
+    anim.setAttribute('repeatCount', 'indefinite');
+    anim.setAttribute('begin', (idx * 0.15 + p * 0.8) + 's');
+    const mpath = document.createElementNS('http://www.w3.org/2000/svg', 'mpath');
+    mpath.setAttribute('href', '#path' + idx + 'v');
+    anim.appendChild(mpath);
+    circle.appendChild(anim);
+    svg.appendChild(circle);
+  }
+});
+
+// ===== 视口平移缩放 =====
+const worldEl = document.getElementById('world');
+const canvasContainer = document.getElementById('canvasContainer');
+let scale = 1, panX = 0, panY = 0;
+let isDragging = false, dragStartX, dragStartY, panStartX2, panStartY2;
+
+function applyTransform() {
+  worldEl.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + scale + ')';
+}
+function centerView() {
+  const cw = canvasContainer.clientWidth, ch = canvasContainer.clientHeight;
+  const centerX = 950, centerY = 640;
+  scale = Math.min(cw / 1650, ch / 1350, 1.1);
+  panX = cw / 2 - centerX * scale;
+  panY = ch / 2 - centerY * scale;
+  applyTransform();
+}
+centerView();
+window.addEventListener('resize', centerView);
+
+canvasContainer.addEventListener('wheel', e => {
+  e.preventDefault();
+  const rect = canvasContainer.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const oldScale = scale;
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  scale = Math.max(0.2, Math.min(5, scale * delta));
+  panX = mx - (mx - panX) * (scale / oldScale);
+  panY = my - (my - panY) * (scale / oldScale);
+  applyTransform();
+}, { passive: false });
+
+canvasContainer.addEventListener('mousedown', e => {
+  if (e.target.closest('.node') || e.target.closest('.link-hit')) return;
+  isDragging = true; dragStartX = e.clientX; dragStartY = e.clientY;
+  panStartX2 = panX; panStartY2 = panY;
+  canvasContainer.style.cursor = 'grabbing';
+});
+window.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  panX = panStartX2 + (e.clientX - dragStartX);
+  panY = panStartY2 + (e.clientY - dragStartY);
+  applyTransform();
+});
+window.addEventListener('mouseup', () => { isDragging = false; canvasContainer.style.cursor = ''; });
+
+// ===== Tooltip =====
+const tooltip = document.getElementById('tooltip');
+const tooltipTitle = document.getElementById('tooltipTitle');
+const tooltipContent = document.getElementById('tooltipContent');
+
+function showTooltip(e, node) {
+  tooltipTitle.textContent = node.name;
+  tooltipContent.innerHTML = node.metrics.map(m => {
+    const cls = m.real ? '' : ' simulated';
+    return '<div class="tooltip-row"><span class="tooltip-label">' + m.label + '：</span><span class="tooltip-value' + cls + '">' + m.value + '</span></div>';
+  }).join('');
+  positionTooltip(e);
+  tooltip.style.display = 'block';
+}
+function showLinkTooltip(e, link) {
+  tooltipTitle.textContent = link.label;
+  tooltipContent.innerHTML = link.metrics.map(m => {
+    const cls = m.real ? '' : ' simulated';
+    return '<div class="tooltip-row"><span class="tooltip-label">' + m.label + '：</span><span class="tooltip-value' + cls + '">' + m.value + '</span></div>';
+  }).join('');
+  positionTooltip(e);
+  tooltip.style.display = 'block';
+}
+function positionTooltip(e) {
+  let x = e.clientX + 16, y = e.clientY + 16;
+  if (x + 300 > window.innerWidth) x = e.clientX - 300;
+  if (y + 250 > window.innerHeight) y = e.clientY - 250;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top = y + 'px';
+}
+function hideTooltip() { tooltip.style.display = 'none'; }
+
+// ===== 详情面板 =====
+const detailPanel = document.getElementById('detailPanel');
+const detailTitle = document.getElementById('detailTitle');
+const detailBody = document.getElementById('detailBody');
+
+let currentNodeForInstance = null;
+
+function openDetail(node) {
+  currentNodeForInstance = node;
+  detailTitle.textContent = node.name + ' - 指标详情';
+  document.getElementById('instanceBtn').style.display = 'inline-flex';
+  let html = '<div class="detail-text-metrics">';
+  node.metrics.forEach(m => {
+    const color = m.real ? '#4dabf7' : '#ffc107';
+    html += '<div class="detail-text-item"><div class="detail-text-name">' + m.label + (m.real ? '' : ' <span style="color:#ffc107;font-size:10px;">模拟</span>') + '</div><div class="detail-text-value" style="color:' + color + ';">' + m.value + '</div></div>';
+  });
+  html += '</div>';
+
+  // 模拟趋势图
+  const chartMetrics = node.metrics.filter(m => /^[\d,.]+%?$/.test(m.value.replace(/[,ms]/g, '')));
+  chartMetrics.slice(0, 4).forEach(m => {
+    html += '<div class="detail-chart-title">' + m.label + ' 趋势（近1小时）</div>';
+    html += '<div class="detail-chart" id="chart-' + m.label + '"></div>';
+  });
+  detailBody.innerHTML = html;
+  detailPanel.classList.add('detail-panel-open');
+
+  // 绘制迷你趋势图
+  setTimeout(() => {
+    chartMetrics.slice(0, 4).forEach(m => {
+      const el = detailBody.querySelector('#chart-' + CSS.escape(m.label));
+      if (el) drawMiniChart(el, m.label);
+    });
+  }, 50);
+}
+function closeDetail() { detailPanel.classList.remove('detail-panel-open'); }
+
+function drawMiniChart(el, label) {
+  const canvas = document.createElement('canvas');
+  canvas.width = el.clientWidth * 2; canvas.height = el.clientHeight * 2;
+  canvas.style.width = '100%'; canvas.style.height = '100%';
+  el.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+  const w = el.clientWidth, h = el.clientHeight;
+  const padding = { top: 10, right: 10, bottom: 20, left: 40 };
+  const plotW = w - padding.left - padding.right;
+  const plotH = h - padding.top - padding.bottom;
+
+  // 生成模拟数据
+  const points = 60;
+  const base = 30 + Math.random() * 40;
+  const data = [];
+  for (let i = 0; i < points; i++) {
+    data.push(base + Math.sin(i * 0.3) * 8 + (Math.random() - 0.5) * 6);
+  }
+  const minV = Math.min(...data) * 0.9, maxV = Math.max(...data) * 1.1;
+
+  // 网格
+  ctx.strokeStyle = 'rgba(77,171,247,0.1)';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 4; i++) {
+    const y = padding.top + plotH * i / 4;
+    ctx.beginPath(); ctx.moveTo(padding.left, y); ctx.lineTo(w - padding.right, y); ctx.stroke();
+  }
+
+  // 曲线
+  ctx.beginPath();
+  ctx.strokeStyle = '#4dabf7';
+  ctx.lineWidth = 1.5;
+  data.forEach((v, i) => {
+    const x = padding.left + (i / (points - 1)) * plotW;
+    const y = padding.top + plotH - ((v - minV) / (maxV - minV)) * plotH;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // 渐变填充
+  const grad = ctx.createLinearGradient(0, padding.top, 0, h - padding.bottom);
+  grad.addColorStop(0, 'rgba(77,171,247,0.2)');
+  grad.addColorStop(1, 'rgba(77,171,247,0)');
+  ctx.lineTo(padding.left + plotW, h - padding.bottom);
+  ctx.lineTo(padding.left, h - padding.bottom);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // X轴标签
+  ctx.fillStyle = 'rgba(224,230,237,0.3)';
+  ctx.font = '9px Consolas';
+  ctx.textAlign = 'center';
+  ['60分前', '45分前', '30分前', '15分前', '现在'].forEach((t, i) => {
+    ctx.fillText(t, padding.left + (i / 4) * plotW, h - 4);
+  });
+
+  // Y轴标签
+  ctx.textAlign = 'right';
+  ctx.fillText(maxV.toFixed(1), padding.left - 4, padding.top + 8);
+  ctx.fillText(minV.toFixed(1), padding.left - 4, h - padding.bottom);
+}
+
+// ===== 实例页面 =====
+const instancePage = document.getElementById('instancePage');
+const instancePageTitle = document.getElementById('instancePageTitle');
+const instanceNodeSelect = document.getElementById('instanceNodeSelect');
+const instanceSelect = document.getElementById('instanceSelect');
+const instanceList = document.getElementById('instanceList');
+const instanceMain = document.getElementById('instanceMain');
+
+// 模拟实例数据（实例 IP 与终态拓扑图一致）
+const instanceData = {
+  nginx_dh30: [
+    { id: 'dh30-01', name: 'nginx(道合3.0)-实例1', ip: '172.16.27.100', status: 'running', cpu: '31.2%', mem: '45.7%', disk: '38.1%', conn: '1,842', uptime: '128天 5小时', pid: '12847', load: '1.23', io: '12.5MB/s', openFd: '3,256', maxFd: '65,535', tcpConn: '1,842', queue: '0' },
+    { id: 'dh30-02', name: 'nginx(道合3.0)-实例2', ip: '172.16.27.101', status: 'running', cpu: '28.6%', mem: '42.3%', disk: '37.8%', conn: '1,523', uptime: '128天 5小时', pid: '12901', load: '0.98', io: '10.2MB/s', openFd: '2,891', maxFd: '65,535', tcpConn: '1,523', queue: '0' }
+  ],
+  nginx_dh10: [
+    { id: 'dh10-01', name: 'nginx(道合1.0)-实例1', ip: '172.16.27.120', status: 'running', cpu: '22.4%', mem: '38.9%', disk: '35.2%', conn: '642', uptime: '200天 2小时', pid: '5621', load: '0.85', io: '6.2MB/s', openFd: '1,892', maxFd: '65,535', tcpConn: '642', queue: '0' },
+    { id: 'dh10-02', name: 'nginx(道合1.0)-实例2', ip: '172.16.27.121', status: 'running', cpu: '25.7%', mem: '40.1%', disk: '35.1%', conn: '598', uptime: '200天 2小时', pid: '5654', load: '0.92', io: '5.8MB/s', openFd: '1,812', maxFd: '65,535', tcpConn: '598', queue: '0' }
+  ],
+  nginx_dy30: [
+    { id: 'dy30-01', name: 'nginx(道悦3.0)-实例1', ip: '172.16.27.46', status: 'running', cpu: '35.8%', mem: '48.6%', disk: '39.7%', conn: '1,204', uptime: '96天 12小时', pid: '13056', load: '1.67', io: '15.8MB/s', openFd: '3,812', maxFd: '65,535', tcpConn: '1,204', queue: '2' },
+    { id: 'dy30-02', name: 'nginx(道悦3.0)-实例2', ip: '172.16.27.51', status: 'stopped', cpu: '0%', mem: '0%', disk: '39.5%', conn: '0', uptime: '--', pid: '--', load: '0', io: '0MB/s', openFd: '0', maxFd: '65,535', tcpConn: '0', queue: '0' }
+  ],
+  sse: [
+    { id: 'sse-01', name: 'SSE运维控制台-实例1', ip: '192.168.49.162', status: 'running', cpu: '18.6%', mem: '52.4%', disk: '41.2%', conn: '186', uptime: '64天 8小时', pid: '8234', load: '0.75', io: '3.2MB/s', openFd: '1,256', maxFd: '32,768', tcpConn: '186', queue: '0' },
+    { id: 'sse-02', name: 'SSE运维控制台-实例2', ip: '192.168.49.163', status: 'running', cpu: '16.9%', mem: '50.8%', disk: '40.9%', conn: '172', uptime: '64天 8小时', pid: '8267', load: '0.68', io: '3.0MB/s', openFd: '1,198', maxFd: '32,768', tcpConn: '172', queue: '0' }
+  ],
+  hsiar_ob: [
+    { id: 'ob-01', name: 'HSIAR_OB-实例1', ip: '192.168.49.167', status: 'running', cpu: '42.8%', mem: '65.3%', disk: '48.2%', conn: '326', uptime: '128天 3小时', pid: '9102', load: '2.15', io: '8.3MB/s', openFd: '1,580', maxFd: '32,768', tcpConn: '326', queue: '0' },
+    { id: 'ob-02', name: 'HSIAR_OB-实例2', ip: '192.168.49.172', status: 'running', cpu: '38.1%', mem: '62.8%', disk: '47.9%', conn: '298', uptime: '128天 3小时', pid: '9135', load: '1.89', io: '7.1MB/s', openFd: '1,423', maxFd: '32,768', tcpConn: '298', queue: '0' }
+  ],
+  operator: [
+    { id: 'op-01', name: '操作员中心-实例1', ip: '192.168.49.218', status: 'running', cpu: '26.5%', mem: '55.1%', disk: '36.6%', conn: '142', uptime: '96天 16小时', pid: '9201', load: '1.02', io: '4.5MB/s', openFd: '1,102', maxFd: '32,768', tcpConn: '142', queue: '0' }
+  ],
+  wechat: [
+    { id: 'wx-01', name: '微信小程序-实例1', ip: '192.168.49.66', status: 'running', cpu: '33.2%', mem: '58.4%', disk: '42.3%', conn: '412', uptime: '45天 11小时', pid: '7401', load: '1.76', io: '9.5MB/s', openFd: '1,356', maxFd: '32,768', tcpConn: '412', queue: '0' }
+  ],
+  mgrapi: [
+    { id: 'mg-01', name: 'HSIAR(mgrapi)-实例1', ip: '192.168.49.167', status: 'running', cpu: '44.7%', mem: '63.8%', disk: '48.5%', conn: '456', uptime: '128天 3小时', pid: '9501', load: '2.31', io: '11.2MB/s', openFd: '1,789', maxFd: '32,768', tcpConn: '456', queue: '1' },
+    { id: 'mg-02', name: 'HSIAR(mgrapi)-实例2', ip: '192.168.49.172', status: 'running', cpu: '40.1%', mem: '60.5%', disk: '48.0%', conn: '385', uptime: '128天 3小时', pid: '9534', load: '1.72', io: '9.2MB/s', openFd: '1,178', maxFd: '32,768', tcpConn: '385', queue: '0' }
+  ],
+  hsiar_dh30: [
+    { id: 'dh30app-01', name: 'HSIAR-道合3.0-实例1', ip: '192.168.49.112', status: 'running', cpu: '48.6%', mem: '69.2%', disk: '52.5%', conn: '312', uptime: '32天 16小时', pid: '7601', load: '2.34', io: '11.8MB/s', openFd: '1,489', maxFd: '32,768', tcpConn: '312', queue: '2' },
+    { id: 'dh30app-02', name: 'HSIAR-道合3.0-实例2', ip: '192.168.49.113', status: 'running', cpu: '45.2%', mem: '66.7%', disk: '52.1%', conn: '287', uptime: '32天 16小时', pid: '7634', load: '2.05', io: '10.5MB/s', openFd: '1,356', maxFd: '32,768', tcpConn: '287', queue: '1' }
+  ],
+  dh10_main: [
+    { id: 'dh10m-01', name: '道合1.0主站-实例1', ip: '192.168.49.23', status: 'running', cpu: '30.2%', mem: '57.8%', disk: '44.3%', conn: '256', uptime: '180天 7小时', pid: '6102', load: '1.18', io: '5.1MB/s', openFd: '654', maxFd: '32,768', tcpConn: '256', queue: '0' },
+    { id: 'dh10m-02', name: '道合1.0主站-实例2', ip: '192.168.49.24', status: 'running', cpu: '28.9%', mem: '55.4%', disk: '44.0%', conn: '238', uptime: '180天 7小时', pid: '6135', load: '1.02', io: '4.7MB/s', openFd: '598', maxFd: '32,768', tcpConn: '238', queue: '0' }
+  ],
+  hsiar_dy30: [
+    { id: 'dy30app-01', name: 'HSIAR-道悦3.0-实例1', ip: '192.168.49.112', status: 'running', cpu: '46.3%', mem: '67.1%', disk: '52.2%', conn: '298', uptime: '32天 16小时', pid: '7701', load: '2.21', io: '11.0MB/s', openFd: '1,402', maxFd: '32,768', tcpConn: '298', queue: '1' },
+    { id: 'dy30app-02', name: 'HSIAR-道悦3.0-实例2', ip: '192.168.49.113', status: 'running', cpu: '43.8%', mem: '64.9%', disk: '51.8%', conn: '265', uptime: '32天 16小时', pid: '7734', load: '1.95', io: '9.9MB/s', openFd: '1,301', maxFd: '32,768', tcpConn: '265', queue: '0' }
+  ],
+  dy10_main: [
+    { id: 'dy10m-01', name: '道悦1.0主站-实例1', ip: '192.168.49.23', status: 'running', cpu: '27.6%', mem: '56.2%', disk: '44.1%', conn: '218', uptime: '180天 7小时', pid: '6201', load: '1.05', io: '4.9MB/s', openFd: '712', maxFd: '32,768', tcpConn: '218', queue: '0' },
+    { id: 'dy10m-02', name: '道悦1.0主站-实例2', ip: '192.168.49.24', status: 'running', cpu: '25.1%', mem: '53.8%', disk: '43.9%', conn: '196', uptime: '180天 7小时', pid: '6234', load: '0.91', io: '4.2MB/s', openFd: '645', maxFd: '32,768', tcpConn: '196', queue: '0' }
+  ],
+  qudao: [
+    { id: 'qd-01', name: 'HSIAR-QUDAO-实例1', ip: '192.168.49.112', status: 'running', cpu: '38.4%', mem: '61.2%', disk: '52.0%', conn: '186', uptime: '32天 16小时', pid: '7801', load: '1.62', io: '7.8MB/s', openFd: '1,105', maxFd: '32,768', tcpConn: '186', queue: '0' },
+    { id: 'qd-02', name: 'HSIAR-QUDAO-实例2', ip: '192.168.49.113', status: 'running', cpu: '35.9%', mem: '58.6%', disk: '51.6%', conn: '164', uptime: '32天 16小时', pid: '7834', load: '1.48', io: '7.1MB/s', openFd: '1,022', maxFd: '32,768', tcpConn: '164', queue: '0' }
+  ],
+  client: [
+    { id: 'client-01', name: '客户端聚合', ip: '--', status: 'running', cpu: '--', mem: '--', disk: '--', conn: '42', uptime: '--', pid: '--', load: '--', io: '--', openFd: '--', maxFd: '--', tcpConn: '42', queue: '0' }
+  ]
+};
+
+function openInstancePage() {
+  if (!currentNodeForInstance) return;
+  const node = currentNodeForInstance;
+  instancePageTitle.textContent = node.name + ' - 实例详情';
+
+  // 填充节点下拉框
+  instanceNodeSelect.innerHTML = '';
+  nodes.forEach(n => {
+    const opt = document.createElement('option');
+    opt.value = n.id;
+    opt.textContent = n.name;
+    if (n.id === node.id) opt.selected = true;
+    instanceNodeSelect.appendChild(opt);
+  });
+
+  loadInstancesForNode(node.id);
+  instancePage.classList.add('visible');
+}
+
+function closeInstancePage() {
+  instancePage.classList.remove('visible');
+}
+
+function loadInstancesForNode(nodeId) {
+  const instances = instanceData[nodeId] || [];
+  instanceSelect.innerHTML = '';
+  instanceList.innerHTML = '';
+
+  instances.forEach((inst, idx) => {
+    // 下拉选项
+    const opt = document.createElement('option');
+    opt.value = inst.id;
+    opt.textContent = inst.name + ' (' + inst.ip + ')';
+    instanceSelect.appendChild(opt);
+
+    // 列表项
+    const item = document.createElement('div');
+    item.className = 'instance-list-item' + (idx === 0 ? ' active' : '');
+    item.onclick = () => selectInstance(nodeId, inst.id);
+    const alarmCount = getActiveAlertsForInstance(nodeId, inst.ip).length;
+    item.innerHTML = '<div class="instance-status-dot ' + inst.status + '"></div><span class="instance-list-name">' + inst.name + '</span><span class="instance-list-ip">' + inst.ip + '</span>' + (alarmCount > 0 ? '<span class="instance-list-alert">' + alarmCount + '</span>' : '');
+    instanceList.appendChild(item);
+  });
+
+  if (instances.length > 0) {
+    renderInstanceDetail(instances[0], nodeId);
+  } else {
+    instanceMain.innerHTML = '<div style="text-align:center;color:rgba(224,230,237,0.4);padding:60px 0;">暂无实例数据</div>';
+  }
+}
+
+function onInstanceNodeChange() {
+  const nodeId = instanceNodeSelect.value;
+  loadInstancesForNode(nodeId);
+}
+
+function onInstanceChange() {
+  const instId = instanceSelect.value;
+  const nodeId = instanceNodeSelect.value;
+  selectInstance(nodeId, instId);
+}
+
+function selectInstance(nodeId, instId) {
+  const instances = instanceData[nodeId] || [];
+  const inst = instances.find(i => i.id === instId);
+  if (!inst) return;
+
+  // 更新下拉框
+  instanceSelect.value = instId;
+  // 更新列表高亮
+  instanceList.querySelectorAll('.instance-list-item').forEach((el, idx) => {
+    el.classList.toggle('active', instances[idx] && instances[idx].id === instId);
+  });
+
+  renderInstanceDetail(inst, nodeId);
+}
+
+function renderInstanceDetail(inst, nodeId) {
+  const statusLabel = inst.status === 'running' ? '运行中' : '已停止';
+  const cpuNum = parseFloat(inst.cpu);
+  const memNum = parseFloat(inst.mem);
+  const cpuClass = cpuNum > 80 ? 'danger' : cpuNum > 60 ? 'warn' : '';
+  const memClass = memNum > 80 ? 'danger' : memNum > 60 ? 'warn' : '';
+
+  let html = '<div class="instance-detail-header">';
+  html += '<div class="instance-detail-name">' + inst.name + '</div>';
+  html += '<div class="instance-detail-status ' + inst.status + '">' + statusLabel + '</div>';
+  html += '<span style="font-size:12px;color:rgba(224,230,237,0.4);font-family:Consolas,monospace;margin-left:8px;">' + inst.ip + '</span>';
+  html += '</div>';
+
+  // 同机多应用共享提示（Tomcat 指标为机器级，无法归属到具体应用）
+  const nodeInfo = getNodeById(nodeId);
+  if (nodeInfo && nodeInfo.shared) {
+    html += '<div class="instance-shared-tip">' + escHtml(nodeInfo.shared) + '</div>';
+  }
+
+  // 该实例自己的活跃告警（告警记录中的 SERVER_IP 维度）
+  const instAlerts = getActiveAlertsForInstance(nodeId, inst.ip);
+  if (instAlerts.length > 0) {
+    html += '<div class="instance-alert-banner">';
+    instAlerts.forEach(a => {
+      html += '<div class="instance-alert-line ' + a.alertLevel + '">'
+        + '<span>⚠</span>'
+        + '<span class="ial-metric">' + escHtml(a.metricName) + ' ' + escHtml(a.operator) + ' ' + escHtml(a.thresholdValue) + '</span>'
+        + '<span class="ial-value">' + escHtml(a.metricValue) + '</span>'
+        + '<span class="ial-time">' + escHtml(a.alertTime.slice(11)) + ' 触发</span>'
+        + '</div>';
+    });
+    html += '</div>';
+  }
+
+  // 指标卡片
+  html += '<div class="instance-metric-grid">';
+  const cards = [
+    { label: 'CPU 使用率', value: inst.cpu, unit: '', cls: cpuClass },
+    { label: '内存使用率', value: inst.mem, unit: '', cls: memClass },
+    { label: '磁盘使用率', value: inst.disk, unit: '' },
+    { label: '活跃连接数', value: inst.conn, unit: '' },
+    { label: '系统负载', value: inst.load, unit: '' },
+    { label: '磁盘 I/O', value: inst.io, unit: '' },
+    { label: '运行时长', value: inst.uptime, unit: '' },
+    { label: '进程 PID', value: inst.pid, unit: '' },
+    { label: '已打开文件句柄', value: inst.openFd, unit: '' },
+    { label: '文件句柄上限', value: inst.maxFd, unit: '' },
+    { label: 'TCP 连接数', value: inst.tcpConn, unit: '' },
+    { label: '任务队列', value: inst.queue, unit: '' }
+  ];
+  cards.forEach(c => {
+    html += '<div class="instance-metric-card"><div class="imc-label">' + c.label + '</div><div class="imc-value ' + (c.cls || '') + '">' + c.value + '<span class="imc-unit">' + (c.unit || '') + '</span></div></div>';
+  });
+  html += '</div>';
+
+  // 趋势图区域
+  html += '<div class="instance-chart-section">';
+  html += '<div class="instance-chart-title">实例指标趋势（近1小时）</div>';
+  html += '<div class="instance-chart-row">';
+  html += '<div class="instance-chart-box" id="instChartCpu"><canvas></canvas></div>';
+  html += '<div class="instance-chart-box" id="instChartMem"><canvas></canvas></div>';
+  html += '</div>';
+  html += '<div class="instance-chart-row">';
+  html += '<div class="instance-chart-box" id="instChartConn"><canvas></canvas></div>';
+  html += '<div class="instance-chart-box" id="instChartIo"><canvas></canvas></div>';
+  html += '</div>';
+  html += '</div>';
+
+  instanceMain.innerHTML = html;
+
+  // 绘制趋势图
+  setTimeout(() => {
+    const cpuBase = parseFloat(inst.cpu) || 30;
+    const memBase = parseFloat(inst.mem) || 55;
+    const connBase = parseInt(inst.conn.replace(/,/g, '')) || 200;
+    drawInstanceChart('instChartCpu', 'CPU 使用率 (%)', cpuBase, 0, 100, '#4dabf7');
+    drawInstanceChart('instChartMem', '内存使用率 (%)', memBase, 0, 100, '#be8eff');
+    drawInstanceChart('instChartConn', '活跃连接数', connBase, 0, connBase * 2, '#51cf66');
+    drawInstanceChart('instChartIo', '磁盘 I/O', 10, 0, 30, '#ff6b6b', 'MB/s');
+  }, 50);
+}
+
+function drawInstanceChart(containerId, title, base, minV, maxV, color, unit) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const canvas = container.querySelector('canvas');
+  if (!canvas) return;
+  const rect = container.getBoundingClientRect();
+  canvas.width = rect.width * 2; canvas.height = rect.height * 2;
+  canvas.style.width = '100%'; canvas.style.height = '100%';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+  const w = rect.width, h = rect.height;
+  const pad = { top: 28, right: 12, bottom: 22, left: 42 };
+  const plotW = w - pad.left - pad.right;
+  const plotH = h - pad.top - pad.bottom;
+
+  // 标题
+  ctx.fillStyle = 'rgba(224,230,237,0.6)';
+  ctx.font = '11px Microsoft YaHei';
+  ctx.textAlign = 'left';
+  ctx.fillText(title, pad.left, 16);
+
+  // 网格
+  ctx.strokeStyle = 'rgba(77,171,247,0.08)';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + plotH * i / 4;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w - pad.right, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(224,230,237,0.3)';
+    ctx.font = '9px Consolas';
+    ctx.textAlign = 'right';
+    const val = maxV - (maxV - minV) * i / 4;
+    ctx.fillText(val.toFixed(0) + (unit ? unit : ''), pad.left - 4, y + 3);
+  }
+
+  // 数据
+  const points = 60;
+  const data = [];
+  for (let i = 0; i < points; i++) {
+    data.push(base + Math.sin(i * 0.25 + Math.random()) * (base * 0.15) + (Math.random() - 0.5) * base * 0.08);
+  }
+
+  // 曲线
+  ctx.beginPath();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  data.forEach((v, i) => {
+    const x = pad.left + (i / (points - 1)) * plotW;
+    const y = pad.top + plotH - ((v - minV) / (maxV - minV)) * plotH;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // 渐变
+  const grad = ctx.createLinearGradient(0, pad.top, 0, h - pad.bottom);
+  grad.addColorStop(0, color.replace(')', ',0.15)').replace('rgb', 'rgba'));
+  grad.addColorStop(1, 'rgba(10,14,30,0)');
+  ctx.lineTo(pad.left + plotW, h - pad.bottom);
+  ctx.lineTo(pad.left, h - pad.bottom);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // X轴
+  ctx.fillStyle = 'rgba(224,230,237,0.25)';
+  ctx.font = '9px Consolas';
+  ctx.textAlign = 'center';
+  ['60分前', '30分前', '现在'].forEach((t, i) => {
+    ctx.fillText(t, pad.left + (i / 2) * plotW, h - 4);
+  });
+}
+
+// ===== 告警面板 =====
+function toggleAlert() {
+  const panel = document.getElementById('alertPanel');
+  panel.classList.toggle('alert-float-open');
+}
+
+// ===== 告警记录（演示：同一指标可来自节点汇总，也可来自具体实例） =====
+function minutesBefore(n) {
+  const d = new Date(Date.now() - n * 60000);
+  const pad = x => String(x).padStart(2, '0');
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' '
+    + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+}
+
+// serverIp 不为空 = 具体实例触发；为空 = 节点汇总维度触发
+const alertRecords = [
+  // ---- 实例维度 ----
+  { id: 'AL001', targetType: 'node', targetId: 'nginx_dh30', serverIp: '172.16.27.101',
+    metricName: '5xx错误率', operator: '>', thresholdValue: '1', metricValue: '2.35',
+    alertLevel: 'critical', status: 'active', alertTime: minutesBefore(2) },
+  { id: 'AL002', targetType: 'node', targetId: 'nginx_dy30', serverIp: '172.16.27.51',
+    metricName: 'Nginx进程存活', operator: '<', thresholdValue: '1', metricValue: '0',
+    alertLevel: 'critical', status: 'active', alertTime: minutesBefore(5) },
+  { id: 'AL003', targetType: 'node', targetId: 'mgrapi', serverIp: '192.168.49.172',
+    metricName: 'Tomcat 请求错误率', operator: '>', thresholdValue: '2', metricValue: '3.10',
+    alertLevel: 'warning', status: 'active', alertTime: minutesBefore(8) },
+  // ---- 节点汇总维度 ----
+  { id: 'AL004', targetType: 'node', targetId: 'nginx_dh30', serverIp: null,
+    metricName: '每秒请求数(QPS)', operator: '>', thresholdValue: '300', metricValue: '356.20',
+    alertLevel: 'warning', status: 'active', alertTime: minutesBefore(3) },
+  // ---- 链路维度 ----
+  { id: 'AL005', targetType: 'link', targetId: 'client->nginx_dy30', serverIp: null,
+    metricName: '请求平均耗时', operator: '>', thresholdValue: '30', metricValue: '42.50',
+    alertLevel: 'warning', status: 'active', alertTime: minutesBefore(6) },
+  // ---- 历史（已恢复） ----
+  { id: 'AL006', targetType: 'node', targetId: 'nginx_dh10', serverIp: '172.16.27.121',
+    metricName: '平均响应时间', operator: '>', thresholdValue: '50', metricValue: '58.30',
+    alertLevel: 'warning', status: 'resolved', alertTime: minutesBefore(40), resolveTime: minutesBefore(25) },
+  { id: 'AL007', targetType: 'node', targetId: 'hsiar_dh30', serverIp: '192.168.49.112',
+    metricName: 'Tomcat 请求失败率', operator: '>', thresholdValue: '1', metricValue: '1.85',
+    alertLevel: 'critical', status: 'resolved', alertTime: minutesBefore(76), resolveTime: minutesBefore(58) },
+  { id: 'AL008', targetType: 'node', targetId: 'nginx_dy30', serverIp: null,
+    metricName: '请求错误率', operator: '>', thresholdValue: '1', metricValue: '1.20',
+    alertLevel: 'warning', status: 'resolved', alertTime: minutesBefore(105), resolveTime: minutesBefore(92) }
+];
+
+let currentAlertTab = 'active';
+
+function escHtml(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function getNodeById(nodeId) {
+  return nodes.find(n => n.id === nodeId);
+}
+
+function getInstanceByIp(nodeId, ip) {
+  return (instanceData[nodeId] || []).find(i => i.ip === ip);
+}
+
+function getAlertTargetName(alert) {
+  if (alert.targetType === 'node') {
+    const node = getNodeById(alert.targetId);
+    return node ? node.name : alert.targetId;
+  }
+  // 演示中链路无独立ID，用 source->target 标识
+  const link = links.find(l => l.source + '->' + l.target === alert.targetId);
+  return link ? link.label : alert.targetId;
+}
+
+// 某个具体实例的活跃告警
+function getActiveAlertsForInstance(nodeId, ip) {
+  return alertRecords.filter(a => a.status === 'active' && a.targetType === 'node'
+    && a.targetId === nodeId && a.serverIp === ip);
+}
+
+function switchAlertTab(tab) {
+  currentAlertTab = tab;
+  document.querySelectorAll('.alert-tab').forEach(el => {
+    el.classList.toggle('tab-active', el.dataset.tab === tab);
+  });
+  renderAlertList();
+}
+
+function renderAlertList() {
+  const listEl = document.getElementById('alertList');
+  const activeAlerts = alertRecords.filter(a => a.status === 'active');
+
+  document.getElementById('activeAlertCount').textContent = activeAlerts.length;
+  document.getElementById('alertBadge').textContent = activeAlerts.length;
+
+  const items = currentAlertTab === 'active'
+    ? activeAlerts
+    : alertRecords.slice().sort((a, b) => b.alertTime.localeCompare(a.alertTime));
+
+  if (items.length === 0) {
+    listEl.innerHTML = '<div class="alert-float-empty"><span class="alert-float-ok-icon">✓</span><span>'
+      + (currentAlertTab === 'active' ? '系统运行正常' : '暂无告警记录')
+      + '</span><span class="alert-float-empty-time" id="alertTime"></span></div>';
+    return;
+  }
+
+  listEl.innerHTML = items.map(a => {
+    const levelLabel = a.alertLevel === 'critical' ? '严重' : '警告';
+    const resolved = a.status === 'resolved';
+
+    // 维度标签：实例（带 IP）/ 节点汇总 / 链路
+    let scopeTag;
+    if (a.targetType === 'link') {
+      scopeTag = '<span class="alert-float-scope scope-link">链路</span>';
+    } else if (a.serverIp) {
+      const inst = getInstanceByIp(a.targetId, a.serverIp);
+      scopeTag = '<span class="alert-float-scope scope-instance" title="' + escHtml(inst ? inst.name : '实例') + '">实例 '
+        + escHtml(a.serverIp) + '</span>';
+    } else {
+      scopeTag = '<span class="alert-float-scope scope-aggregate">节点汇总</span>';
+    }
+
+    const timeText = resolved
+      ? escHtml(a.alertTime.slice(11)) + ' 触发 · ' + escHtml((a.resolveTime || a.alertTime).slice(11)) + ' 恢复'
+        + '<span class="alert-float-status">已恢复</span>'
+      : escHtml(a.alertTime.slice(11)) + ' 触发 · 持续中';
+
+    return '<div class="alert-float-item alert-float-' + a.alertLevel + (resolved ? ' alert-float-item-resolved' : '')
+      + '" onclick="focusAlert(\'' + a.id + '\')">'
+      + '<div class="alert-float-item-left">'
+      + '<span class="alert-float-level-tag tag-' + a.alertLevel + '">' + levelLabel + '</span>'
+      + '<span class="alert-float-target">' + escHtml(getAlertTargetName(a)) + '</span>'
+      + scopeTag + '</div>'
+      + '<div class="alert-float-item-detail"><span class="alert-float-metric">'
+      + escHtml(a.metricName + ' ' + a.operator + ' ' + a.thresholdValue) + '</span>'
+      + '<span class="alert-float-value">' + escHtml(a.metricValue) + '</span></div>'
+      + '<div class="alert-float-item-time">' + timeText + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+// 点击告警记录：实例告警直达对应实例，汇总告警打开节点详情
+function focusAlert(alertId) {
+  const alert = alertRecords.find(a => a.id === alertId);
+  if (!alert) return;
+  document.getElementById('alertPanel').classList.remove('alert-float-open');
+  if (alert.targetType !== 'node') return;
+
+  const node = getNodeById(alert.targetId);
+  if (!node) return;
+
+  if (alert.serverIp) {
+    currentNodeForInstance = node;
+    openInstancePage();
+    const inst = getInstanceByIp(alert.targetId, alert.serverIp);
+    if (inst) selectInstance(alert.targetId, inst.id);
+  } else {
+    openDetail(node);
+  }
+}
+
+// ===== 时钟 =====
+function updateClock() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  document.getElementById('timeDisplay').textContent = pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+  const days = ['日', '一', '二', '三', '四', '五', '六'];
+  document.getElementById('dateDisplay').textContent = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate()) + ' 星期' + days[now.getDay()];
+  const alertTimeEl = document.getElementById('alertTime');
+  if (alertTimeEl) alertTimeEl.textContent = pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+  document.getElementById('lastCollect').textContent = '最近采集: ' + pad(now.getHours()) + ':' + pad(now.getMinutes() - 1 < 0 ? 59 : now.getMinutes() - 1) + ':' + pad(now.getSeconds());
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ===== 模拟数据动态更新 =====
+function randomFluctuation(val, pct) {
+  const num = parseFloat(val.replace(/[,%]/g, ''));
+  if (isNaN(num)) return val;
+  const change = num * pct * (Math.random() - 0.5) * 2;
+  const result = num + change;
+  if (val.includes('%')) return result.toFixed(2) + '%';
+  if (val.includes(',')) return Math.round(result).toLocaleString();
+  return result.toFixed(val.includes('.') ? val.split('.')[1].length : 0);
+}
+
+setInterval(() => {
+  nodes.forEach(n => {
+    n.metrics.forEach(m => {
+      if (m.real) m.value = randomFluctuation(m.value, 0.03);
+    });
+    const el = document.getElementById('node-' + n.id);
+    if (!el) return;
+    const rows = el.querySelectorAll('.node-metric-row');
+    const showMetrics = n.metrics.slice(0, 3);
+    rows.forEach((row, i) => {
+      if (showMetrics[i]) {
+        row.querySelector('.node-metric-value').textContent = showMetrics[i].value;
+      }
+    });
+  });
+}, 5000);
+
+// 初始化告警面板（角标 / 活跃列表）
+renderAlertList();
+</script>
+</body>
+</html>

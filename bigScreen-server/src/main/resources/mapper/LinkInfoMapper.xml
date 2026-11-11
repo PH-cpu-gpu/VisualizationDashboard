@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjzg.mapper.LinkInfoMapper">
+
+    <resultMap id="BaseResultMap" type="com.gjzg.entity.LinkInfo">
+        <id column="ID" property="id" jdbcType="VARCHAR"/>
+        <result column="SOURCE_NODE_ID" property="sourceNodeId" jdbcType="VARCHAR"/>
+        <result column="TARGET_NODE_ID" property="targetNodeId" jdbcType="VARCHAR"/>
+        <result column="LINK_NAME" property="linkName" jdbcType="VARCHAR"/>
+        <result column="CREATE_TIME" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        ID, SOURCE_NODE_ID, TARGET_NODE_ID, LINK_NAME, CREATE_TIME
+    </sql>
+
+    <insert id="insert" parameterType="com.gjzg.entity.LinkInfo">
+        INSERT INTO T_MT_LINK_INFO (
+            ID, SOURCE_NODE_ID, TARGET_NODE_ID, LINK_NAME, CREATE_TIME
+        ) VALUES (
+            #{id}, #{sourceNodeId}, #{targetNodeId}, #{linkName}, #{createTime}
+        )
+    </insert>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM T_MT_LINK_INFO
+        WHERE ID = #{id}
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM T_MT_LINK_INFO
+        ORDER BY CREATE_TIME
+    </select>
+
+    <select id="selectByNodes" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM T_MT_LINK_INFO
+        WHERE SOURCE_NODE_ID = #{sourceNodeId}
+          AND TARGET_NODE_ID = #{targetNodeId}
+    </select>
+
+    <delete id="deleteById">
+        DELETE FROM T_MT_LINK_INFO WHERE ID = #{id}
+    </delete>
+
+    <delete id="deleteByNodeId">
+        DELETE FROM T_MT_LINK_INFO WHERE SOURCE_NODE_ID = #{nodeId} OR TARGET_NODE_ID = #{nodeId}
+    </delete>
+
+</mapper>

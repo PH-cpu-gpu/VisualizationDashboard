@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjzg.mapper.TopologyAdminMapper">
+
+    <!-- ==================== 布局 ==================== -->
+
+    <update id="updateNodeLayout">
+        UPDATE T_MT_NODE_INFO
+        SET POS_X = #{posX, jdbcType=NUMERIC},
+            POS_Y = #{posY, jdbcType=NUMERIC}
+        WHERE ID = #{id, jdbcType=VARCHAR}
+    </update>
+
+    <!-- ==================== 节点删除级联 ==================== -->
+
+    <delete id="deleteNodeMetricLatest">
+        DELETE FROM T_MT_METRIC_VALUE_LATEST WHERE NODE_ID = #{nodeId}
+    </delete>
+
+    <delete id="deleteNodeMetricHistory">
+        DELETE FROM T_MT_METRIC_VALUE_HISTORY WHERE NODE_ID = #{nodeId}
+    </delete>
+
+    <delete id="deleteNodeMetricDef">
+        DELETE FROM T_MT_NODE_METRIC_DEF WHERE NODE_ID = #{nodeId}
+    </delete>
+
+    <delete id="deleteLinkValueLatestByNode">
+        DELETE FROM T_MT_LINK_VALUE_LATEST
+        WHERE LINK_ID IN (SELECT ID FROM T_MT_LINK_INFO
+                          WHERE SOURCE_NODE_ID = #{nodeId} OR TARGET_NODE_ID = #{nodeId})
+    </delete>
+
+    <delete id="deleteLinkValueHistoryByNode">
+        DELETE FROM T_MT_LINK_VALUE_HISTORY
+        WHERE LINK_ID IN (SELECT ID FROM T_MT_LINK_INFO
+                          WHERE SOURCE_NODE_ID = #{nodeId} OR TARGET_NODE_ID = #{nodeId})
+    </delete>
+
+    <delete id="deleteLinkMetricDefByNode">
+        DELETE FROM T_MT_LINK_METRIC_DEF
+        WHERE LINK_ID IN (SELECT ID FROM T_MT_LINK_INFO
+                          WHERE SOURCE_NODE_ID = #{nodeId} OR TARGET_NODE_ID = #{nodeId})
+    </delete>
+
+    <select id="countLinksByNode" resultType="int">
+        SELECT COUNT(*) FROM T_MT_LINK_INFO
+        WHERE SOURCE_NODE_ID = #{nodeId} OR TARGET_NODE_ID = #{nodeId}
+    </select>
+
+    <select id="countMetricRowsByNode" resultType="int">
+        SELECT (SELECT COUNT(*) FROM T_MT_METRIC_VALUE_LATEST WHERE NODE_ID = #{nodeId})
+             + (SELECT COUNT(*) FROM T_MT_METRIC_VALUE_HISTORY WHERE NODE_ID = #{nodeId})
+        FROM DUAL
+    </select>
+
+    <!-- 库中 TARGET_TYPE 存小写 node/link，用 UPPER 兼容历史大写数据 -->
+    <delete id="deleteAlertRulesByTarget">
+        DELETE FROM T_MT_ALERT_RULE
+        WHERE UPPER(TARGET_TYPE) = UPPER(#{targetType}) AND TARGET_ID = #{targetId}
+    </delete>
+
+    <!-- 删除节点/链路时关闭其活跃告警：记录保留，仅流转为 resolved（MANUAL） -->
+    <update id="resolveAlertsByTarget">
+        UPDATE T_MT_ALERT_RECORD
+           SET STATUS = 'resolved',
+               RESOLVE_TIME = SYSDATE,
+               RESOLVE_TYPE = 'MANUAL'
+         WHERE STATUS = 'active'
+           AND UPPER(TARGET_TYPE) = UPPER(#{targetType})
+           AND TARGET_ID = #{targetId}
+    </update>
+
+    <!-- ==================== 链路删除级联 ==================== -->
+
+    <delete id="deleteLinkValueLatestByLink">
+        DELETE FROM T_MT_LINK_VALUE_LATEST WHERE LINK_ID = #{linkId}
+    </delete>
+
+    <delete id="deleteLinkValueHistoryByLink">
+        DELETE FROM T_MT_LINK_VALUE_HISTORY WHERE LINK_ID = #{linkId}
+    </delete>
+
+    <delete id="deleteLinkMetricDefByLink">
+        DELETE FROM T_MT_LINK_METRIC_DEF WHERE LINK_ID = #{linkId}
+    </delete>
+
+    <!-- ==================== 指标模板 ==================== -->
+
+    <insert id="insertMetricDefsFromTpl">
+        INSERT INTO T_MT_NODE_METRIC_DEF (ID, NODE_ID, METRIC_NAME, METRIC_UNIT, COLLECT_DESC, TIME_WINDOW, SORT_ORDER, CREATE_TIME)
+        SELECT REPLACE(RAWTOHEX(SYS_GUID()), '-'), #{nodeId}, t.METRIC_NAME, t.METRIC_UNIT,
+               t.COLLECT_DESC, t.TIME_WINDOW, t.SORT_ORDER, SYSDATE
+        FROM T_MT_NODE_METRIC_TPL t
+        WHERE t.STYLE_CLASS = #{styleClass}
+          AND NOT EXISTS (SELECT 1 FROM T_MT_NODE_METRIC_DEF d
+                          WHERE d.NODE_ID = #{nodeId} AND d.METRIC_NAME = t.METRIC_NAME)
+    </insert>
+
+    <!-- 链路指标：按 (源节点样式, 目标节点样式) 从模板复制，新增链路即自动带指标定义 -->
+    <insert id="insertLinkMetricDefsFromTpl">
+        INSERT INTO T_MT_LINK_METRIC_DEF (ID, LINK_ID, METRIC_NAME, METRIC_UNIT, COLLECT_DESC, TIME_WINDOW, SORT_ORDER, CREATE_TIME)
+        SELECT REPLACE(RAWTOHEX(SYS_GUID()), '-'), #{linkId}, t.METRIC_NAME, t.METRIC_UNIT,
+               t.COLLECT_DESC, t.TIME_WINDOW, t.SORT_ORDER, SYSDATE
+        FROM T_MT_LINK_METRIC_TPL t
+        WHERE t.SOURCE_STYLE = #{sourceStyle}
+          AND t.TARGET_STYLE = #{targetStyle}
+          AND NOT EXISTS (SELECT 1 FROM T_MT_LINK_METRIC_DEF d
+                          WHERE d.LINK_ID = #{linkId} AND d.METRIC_NAME = t.METRIC_NAME)
+    </insert>
+
+</mapper>

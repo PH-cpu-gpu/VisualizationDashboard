@@ -1,0 +1,57 @@
+spring:
+  main:
+    allow-circular-references: true
+  autoconfigure:
+    exclude: com.hundsun.jrescloud.monitor.MonitorAutoConfiguration,com.hundsun.jrescloud.db.monitor.DbMonitorAutoConfiguration
+  datasource:
+    driver-class-name: oracle.jdbc.OracleDriver
+    jdbc-url: jdbc:oracle:thin:@127.0.0.1:1521:XE
+    username: bigScreen
+    password: 123
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+    nginx-log:
+      driver-class-name: oracle.jdbc.driver.OracleDriver
+      jdbc-url: jdbc:oracle:thin:@127.0.0.1:1521:XE
+      username: standdbppos
+      password: dftest202001
+      type: com.zaxxer.hikari.HikariDataSource
+      hikari:
+        minimum-idle: 2
+        maximum-pool-size: 5
+        connection-timeout: 30000
+        idle-timeout: 600000
+        max-lifetime: 1800000
+    tomcat-log:
+      driver-class-name: oracle.jdbc.driver.OracleDriver
+      jdbc-url: jdbc:oracle:thin:@127.0.0.1:1521:XE
+      username: standdbppos
+      password: dftest202001
+      type: com.zaxxer.hikari.HikariDataSource
+      hikari:
+        minimum-idle: 2
+        maximum-pool-size: 5
+        connection-timeout: 30000
+        idle-timeout: 600000
+        max-lifetime: 1800000
+
+
+mybatis:
+  mapper-locations: classpath:/mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: VARCHAR
+
+app:
+  name: bigScreen-server
+  group: g
+  version: v1
+  server:
+    port: 9090
+  deploy:
+    version: 1.0

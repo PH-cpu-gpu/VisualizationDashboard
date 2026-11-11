@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjzg.mapper.NodeInfoMapper">
+
+    <resultMap id="BaseResultMap" type="com.gjzg.entity.NodeInfo">
+        <id column="ID" property="id" jdbcType="VARCHAR"/>
+        <result column="NODE_NAME" property="nodeName" jdbcType="VARCHAR"/>
+        <result column="DESCRIPTION" property="description" jdbcType="VARCHAR"/>
+        <result column="POS_X" property="posX" jdbcType="NUMERIC"/>
+        <result column="POS_Y" property="posY" jdbcType="NUMERIC"/>
+        <result column="NODE_TYPE" property="nodeType" jdbcType="VARCHAR"/>
+        <result column="STYLE_CLASS" property="styleClass" jdbcType="VARCHAR"/>
+        <result column="BIND_TYPE" property="bindType" jdbcType="VARCHAR"/>
+        <result column="INSTANCE_IPS" property="instanceIps" jdbcType="VARCHAR"/>
+        <result column="REQUEST_PREFIX" property="requestPrefix" jdbcType="VARCHAR"/>
+        <result column="CREATE_TIME" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        ID, NODE_NAME, DESCRIPTION, POS_X, POS_Y, NODE_TYPE, STYLE_CLASS,
+        BIND_TYPE, INSTANCE_IPS, REQUEST_PREFIX, CREATE_TIME
+    </sql>
+
+    <insert id="insert" parameterType="com.gjzg.entity.NodeInfo">
+        INSERT INTO T_MT_NODE_INFO (
+            ID, NODE_NAME, DESCRIPTION, POS_X, POS_Y, NODE_TYPE, STYLE_CLASS,
+            BIND_TYPE, INSTANCE_IPS, REQUEST_PREFIX, CREATE_TIME
+        ) VALUES (
+            #{id, jdbcType=VARCHAR}, #{nodeName, jdbcType=VARCHAR}, #{description, jdbcType=VARCHAR},
+            #{posX, jdbcType=NUMERIC}, #{posY, jdbcType=NUMERIC},
+            #{nodeType, jdbcType=VARCHAR}, #{styleClass, jdbcType=VARCHAR},
+            #{bindType, jdbcType=VARCHAR}, #{instanceIps, jdbcType=VARCHAR},
+            #{requestPrefix, jdbcType=VARCHAR},
+            #{createTime, jdbcType=TIMESTAMP}
+        )
+    </insert>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM T_MT_NODE_INFO
+        WHERE ID = #{id}
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM T_MT_NODE_INFO
+        ORDER BY CREATE_TIME
+    </select>
+
+    <select id="selectByName" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM T_MT_NODE_INFO
+        WHERE NODE_NAME = #{nodeName}
+    </select>
+
+    <update id="update" parameterType="com.gjzg.entity.NodeInfo">
+        UPDATE T_MT_NODE_INFO
+        SET NODE_NAME = #{nodeName, jdbcType=VARCHAR},
+            DESCRIPTION = #{description, jdbcType=VARCHAR},
+            POS_X = #{posX, jdbcType=NUMERIC},
+            POS_Y = #{posY, jdbcType=NUMERIC},
+            NODE_TYPE = #{nodeType, jdbcType=VARCHAR},
+            STYLE_CLASS = #{styleClass, jdbcType=VARCHAR},
+            BIND_TYPE = #{bindType, jdbcType=VARCHAR},
+            INSTANCE_IPS = #{instanceIps, jdbcType=VARCHAR},
+            REQUEST_PREFIX = #{requestPrefix, jdbcType=VARCHAR}
+        WHERE ID = #{id, jdbcType=VARCHAR}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM T_MT_NODE_INFO WHERE ID = #{id}
+    </delete>
+
+</mapper>
